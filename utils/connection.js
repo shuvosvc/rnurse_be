@@ -15,6 +15,7 @@ const pool = new Pool({
   password: postgresPassword,
   database: postgresDatabase,
   max: connectionLimit,
+  
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
   // ssl: {
