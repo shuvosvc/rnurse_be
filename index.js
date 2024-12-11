@@ -15,10 +15,10 @@ require("dotenv").config();
 
 
 const multipartMiddleware = multipart();
-
+const cookieParser = require("cookie-parser");
 
 const {getAllUsers,
-  gauthRegistration
+  gauth
 
 } = require("./controllers/user");
 
@@ -39,6 +39,7 @@ app.set("port", process.env.PORT || ApplicationSettings.port);
 
 app.use(bodyParser.json({ limit: "2mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "2mb" }));
+app.use(cookieParser());
 
 app.use(methodOverride());
 app.use(require("./utils/logger"));
@@ -61,7 +62,7 @@ app.get(`${process.env.BASE_URL}/`, (req, res) => {
 
 
 app.post( `${process.env.BASE_URL}/getAllUsers`, getAllUsers);
-app.post( `${process.env.BASE_URL}/gauthRegistration`, gauthRegistration);
+app.post( `${process.env.BASE_URL}/gauth`, gauth);
 
 
 http.createServer(app).listen(app.get("port"), function () {

@@ -27,7 +27,7 @@
             console.log("Encoded JWT ID token: " + response.credential);
 
             // Send the token to your backend for verification
-            fetch("http://localhost:5000/v1/gauthRegistration", {
+            fetch("http://localhost:5000/v1/gauth", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
