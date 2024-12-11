@@ -20,19 +20,34 @@ exports.checkParams = function checkParams(req, requiredParams) {
     }
 }
 
-exports.verifyJwt = async (token, secret) => {
+
+  exports.verifyJwt = async (...args) => {
     return new Promise((resolve, reject) => {
-      jwt.verify(token, secret, (err, decoded) => {
-        if (err) {
     
-          resolve(null);
-        } else {
-          resolve(decoded);
-        }
-      });
+      if (args.length === 2){
+
+        jwt.verify(args[0], args[1], (err, decoded) => {
+            if (err) {
+        
+              resolve(null);
+            } else {
+              resolve(decoded);
+            }
+          });
+      }else{
+
+        jwt.verify(token, (err, decoded) => {
+            if (err) {
+              resolve(null);
+            } else {
+              resolve(decoded);
+            }
+          });
+      }
+      
+
     });
   };
-  
 
 
   exports.api = function api(requiredParams, func) {

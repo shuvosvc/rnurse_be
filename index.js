@@ -18,7 +18,7 @@ const multipartMiddleware = multipart();
 
 
 const {getAllUsers,
-  createCustomer
+  gauthRegistration
 
 } = require("./controllers/user");
 
@@ -61,6 +61,7 @@ app.get(`${process.env.BASE_URL}/`, (req, res) => {
 
 
 app.post( `${process.env.BASE_URL}/getAllUsers`, getAllUsers);
+app.post( `${process.env.BASE_URL}/gauthRegistration`, gauthRegistration);
 
 
 http.createServer(app).listen(app.get("port"), function () {
