@@ -17,19 +17,19 @@ require("dotenv").config();
 const multipartMiddleware = multipart();
 const cookieParser = require("cookie-parser");
 
-const {getAllUsers,
-  gauth
+const { getAllUsers,
+  gauth,token
 
 } = require("./controllers/user");
 
 
 
 require("dotenv").config();
-// const api = require('./routes');
+
 const ApplicationSettings = require("./config/ApplicationSettings");
 const { log } = require("logfmt");
 
-// require('./utils/connection');
+
 
 /* Routes Config */
 app.set("port", process.env.PORT || ApplicationSettings.port);
@@ -61,8 +61,9 @@ app.get(`${process.env.BASE_URL}/`, (req, res) => {
 });
 
 
-app.post( `${process.env.BASE_URL}/getAllUsers`, getAllUsers);
-app.post( `${process.env.BASE_URL}/gauth`, gauth);
+app.post(`${process.env.BASE_URL}/getAllUsers`, getAllUsers);
+app.post(`${process.env.BASE_URL}/gauth`, gauth);
+app.post(`${process.env.BASE_URL}/token`, token);
 
 
 http.createServer(app).listen(app.get("port"), function () {

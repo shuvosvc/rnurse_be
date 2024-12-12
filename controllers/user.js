@@ -1,7 +1,5 @@
 const { api, auth, verifyJwt } = require("../helpers/common");
-const database = require('../utils/connection');
 const errors = require("../helpers/errors");
-require("dotenv").config();
 const { OAuth2Client } = require("google-auth-library");
 const { jwtSecret, GAUTH_CLIENT_ID } = require('../config/ApplicationSettings');
 const jwt = require('jsonwebtoken');
@@ -22,9 +20,9 @@ exports.getAllUsers = api(
 );
 
 
-exports.gauth = api(["gauthToken"], async(req, connection) => {
-  const {gauthToken} = req.body;
- 
+exports.gauth = api(["gauthToken"], async (req, connection) => {
+  const { gauthToken } = req.body;
+
 
 
   const client = new OAuth2Client(GAUTH_CLIENT_ID);
@@ -40,13 +38,13 @@ exports.gauth = api(["gauthToken"], async(req, connection) => {
   }
 
   const payload = ticket.getPayload();
-    if (!payload.email) throw new errors.INVALID_ACCESS_TOKEN();
+  if (!payload.email) throw new errors.INVALID_ACCESS_TOKEN();
 
 
 
-   // Check if the user already exists
-   const isExist = await connection.queryOne(
-    "SELECT user_id, first_name, last_name, phone, email, profile_image_url FROM public.users WHERE email = $1",
+  // Check if the user already exists
+  const isExist = await connection.queryOne(
+    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned FROM public.users WHERE email = $1",
     [payload.email]
   );
 
@@ -61,6 +59,7 @@ exports.gauth = api(["gauthToken"], async(req, connection) => {
         phone: isExist.phone,
         email: isExist.email,
         image: isExist.profile_image_url,
+        pinned: isExist.pinned,
       },
       jwtSecret,
       { expiresIn: "1h" }
@@ -81,7 +80,7 @@ exports.gauth = api(["gauthToken"], async(req, connection) => {
     );
 
 
-    return { flag: 200,  accessToken,refreshToken  }
+    return { flag: 200, accessToken, refreshToken }
   } else {
     // Register new user
     const { given_name: firstName = "", family_name: lastName = "", email, picture: profileImage = "" } = payload;
@@ -94,24 +93,25 @@ exports.gauth = api(["gauthToken"], async(req, connection) => {
 
 
 
-        // Generate tokens
-  const accessToken = jwt.sign(
-    {
-      userId: newUser.user_id,
-      firstName,
-      lastName,
-      email,
-      image: profileImage,
-    },
-    jwtSecret,
-    { expiresIn: "1h" }
-  );
+    // Generate tokens
+    const accessToken = jwt.sign(
+      {
+        userId: newUser.user_id,
+        firstName,
+        lastName,
+        email,
+        image: profileImage,
+        pinned:newUser.pinned
+      },
+      jwtSecret,
+      { expiresIn: "1h" }
+    );
 
-  const refreshToken = jwt.sign(
-    { userId: newUser.user_id, email },
-    jwtSecret,
-    { expiresIn: "3d" }
-  );
+    const refreshToken = jwt.sign(
+      { userId: newUser.user_id, email },
+      jwtSecret,
+      { expiresIn: "3d" }
+    );
 
     // Save refresh token and mc_id
     await connection.query(
@@ -121,33 +121,57 @@ exports.gauth = api(["gauthToken"], async(req, connection) => {
 
 
 
-    return { flag: 200,  accessToken,refreshToken  }
+    return { flag: 200, accessToken, refreshToken }
   }
 
- 
+
 });
 
-// // Endpoint to refresh access token
-// app.post("/token", (req, res) => {
-//   const refreshToken = req.cookies.refreshToken;
 
-//   if (!refreshToken || !refreshTokensDB.includes(refreshToken)) {
-//       return res.status(403).json({ message: "Refresh token invalid" });
-//   }
+exports.token = api(["refreshToken"], async(req, connection) => {
+  const {refreshToken:refreshToken_body} = req.body;
+ 
+  const decodedToken_body = await verifyJwt(refreshToken_body, jwtSecret);
 
-//   try {
-//       const user = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+  
+  if (decodedToken_body == null || decodedToken_body.userId == null) throw new errors.INVALID_ACCESS_TOKEN();
 
-//       const newAccessToken = jwt.sign({ username: user.username }, ACCESS_TOKEN_SECRET, {
-//           expiresIn: "15m",
-//       });
+  // Check if the user  exists
 
-//       res.status(200).json({ accessToken: newAccessToken });
-//   } catch (error) {
-//       console.error("Error verifying refresh token:", error);
-//       res.status(403).json({ message: "Refresh token expired or invalid" });
-//   }
-// });
+  
+  const isExist = await connection.queryOne(
+    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned,refresh_token FROM public.users WHERE user_id = $1",
+    [decodedToken_body.userId]
+  ); 
+  
+  
+
+
+
+  if (isExist == null || isExist.user_id == null ) throw new errors.INVALID_USER();
+  if (isExist.refresh_token == null) throw new errors.INVALID_ACCESS_TOKEN();
+  if (isExist.refresh_token != refreshToken_body) throw new errors.INVALID_USER();
+
+   // Generate a new access token
+   const newAccessToken = jwt.sign(
+    {
+      userId: isExist.user_id,
+      firstName: isExist.first_name,
+      lastName: isExist.last_name,
+      phone: isExist.phone,
+      email: isExist.email,
+      image: isExist.profile_image_url,
+      pinned: isExist.pinned,
+      
+    },
+    jwtSecret,
+    { expiresIn: "1h" }
+  );
+
+  return { flag: 200, accessToken:newAccessToken }
+});
+
+
 
 // // Endpoint to logout
 // app.post("/logout", (req, res) => {
@@ -160,64 +184,3 @@ exports.gauth = api(["gauthToken"], async(req, connection) => {
 // });
 
 
-// Refresh Token API
-// exports.refreshToken = async (req, res) => {
-//   let connection;
-//   try {
-//     // Extract refresh token from cookies
-//     const refreshToken = req.cookies.refreshToken;
-//     if (!refreshToken) {
-//       return res.status(401).json(new errors.MISSING_REFRESH_TOKEN());
-//     }
-
-//     // Verify refresh token
-//     let payload;
-//     try {
-//       payload = jwt.verify(refreshToken, jwtSecret);
-//     } catch (err) {
-//       return res.status(401).json(new errors.INVALID_REFRESH_TOKEN());
-//     }
-
-//     const { userId, email } = payload;
-
-//     // Obtain DB connection
-//     connection = await database.getConnection();
-
-//     // Check if the refresh token matches the one in the database
-//     const user = await connection.queryOne(
-//       "SELECT user_id, first_name, last_name, phone, email, profile_image_url, refresh_token FROM public.users WHERE user_id = $1",
-//       [userId]
-//     );
-
-//     if (!user || user.refresh_token !== refreshToken) {
-//       return res.status(401).json(new errors.INVALID_REFRESH_TOKEN());
-//     }
-
-//     // Generate a new access token
-//     const newAccessToken = jwt.sign(
-//       {
-//         userId: user.user_id,
-//         firstName: user.first_name,
-//         lastName: user.last_name,
-//         phone: user.phone,
-//         email: user.email,
-//         image: user.profile_image_url,
-//       },
-//       jwtSecret,
-//       { expiresIn: "1h" }
-//     );
-
-//     return res.status(200).json({ flag: 200, accessToken: newAccessToken });
-//   } catch (error) {
-//     console.error("Error in refreshToken API:", error);
-
-//     if (error instanceof errors.QError) {
-//       return res.status(400).json(error);
-//     }
-//     return res.status(500).json(new errors.SERVER_ERROR());
-//   } finally {
-//     if (connection) {
-//       await connection.release(); // Ensure connection is released
-//     }
-//   }
-// };
