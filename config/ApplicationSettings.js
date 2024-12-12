@@ -4,6 +4,7 @@ var ApplicationSettings = {
   port: process.env.PORT || "5000",
   
   jwtSecret: process.env.JWTSECRET || "fish",
+  GAUTH_CLIENT_ID: process.env.GAUTH_CLIENT_ID || "86548941450-m44vqa6iaedj752kd6niqv9d1aemmalr.apps.googleusercontent.com",
   // Individual PostgreSQL settings
   postgresHost: process.env.POSTGRES_HOST || "localhost",
   postgresUser: process.env.POSTGRES_USER || "default",
