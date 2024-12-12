@@ -90,15 +90,8 @@ exports.gauth = async (req, res) => {
         [refreshToken, isExist.user_id]
       );
 
-      // Set refresh token cookie
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "Strict",
-        maxAge: 4 * 24 * 60 * 60 * 1000,
-      });
 
-      return res.status(200).json({ flag: 200, accessToken });
+      return res.status(200).json({ flag: 200, accessToken ,refreshToken});
     } else {
       // Register new user
       const { given_name: firstName = "", family_name: lastName = "", email, picture: profileImage = "" } = payload;
@@ -136,15 +129,9 @@ exports.gauth = async (req, res) => {
         [refreshToken, newUser.user_id, newUser.user_id]
       );
 
-      // Set refresh token cookie
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "Strict",
-        maxAge: 4 * 24 * 60 * 60 * 1000,
-      });
+  
 
-      return res.status(201).json({ flag: 201, accessToken });
+      return res.status(201).json({ flag: 201, accessToken,refreshToken });
     }
   } catch (error) {
     console.error("Error in gauth API:", error);
@@ -160,3 +147,37 @@ exports.gauth = async (req, res) => {
     }
   }
 };
+
+
+
+// // Endpoint to refresh access token
+// app.post("/token", (req, res) => {
+//   const refreshToken = req.cookies.refreshToken;
+
+//   if (!refreshToken || !refreshTokensDB.includes(refreshToken)) {
+//       return res.status(403).json({ message: "Refresh token invalid" });
+//   }
+
+//   try {
+//       const user = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+
+//       const newAccessToken = jwt.sign({ username: user.username }, ACCESS_TOKEN_SECRET, {
+//           expiresIn: "15m",
+//       });
+
+//       res.status(200).json({ accessToken: newAccessToken });
+//   } catch (error) {
+//       console.error("Error verifying refresh token:", error);
+//       res.status(403).json({ message: "Refresh token expired or invalid" });
+//   }
+// });
+
+// // Endpoint to logout
+// app.post("/logout", (req, res) => {
+//   const refreshToken = req.cookies.refreshToken;
+
+//   // Remove the token from the database and clear the cookie
+//   refreshTokensDB = refreshTokensDB.filter((token) => token !== refreshToken);
+//   res.clearCookie("refreshToken");
+//   res.status(200).json({ message: "Logged out" });
+// });
