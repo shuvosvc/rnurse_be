@@ -25,20 +25,23 @@ exports.getAllUsers = api(
 exports.gauth = async (req, res) => {
   let connection;
   try {
-    const { token } = req.body;
-    if (!token) {
+    const { gauthToken } = req.body;
+    if (!gauthToken) {
       return res.status(400).json(new errors.PARAMETER_MISSING());
     }
 
     const client = new OAuth2Client(GAUTH_CLIENT_ID);
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: GAUTH_CLIENT_ID,
-    });
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken: gauthToken,
+        audience: GAUTH_CLIENT_ID,
+      });
 
-    if (!ticket) {
+    } catch (err) {
       return res.status(401).json(new errors.INVALID_ACCESS_TOKEN());
     }
+   
 
     const payload = ticket.getPayload();
     if (!payload.email) {
@@ -149,7 +152,7 @@ exports.gauth = async (req, res) => {
     if (error instanceof errors.QError) {
       return res.status(400).json(error);
     }
-    return res.status(500).json(new errors.ERROR_IN_EXECUTION());
+    return res.status(500).json(new errors.INVALID_ACCESS_TOKEN());
   } finally {
     if (connection) {
       await connection.rollback();
