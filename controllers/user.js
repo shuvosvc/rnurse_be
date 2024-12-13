@@ -173,14 +173,39 @@ exports.token = api(["refreshToken"], async(req, connection) => {
 
 
 
-// // Endpoint to logout
-// app.post("/logout", (req, res) => {
-//   const refreshToken = req.cookies.refreshToken;
+// Endpoint to logout
+exports.logout = api(["refreshToken"], async (req, connection) => {
+  const { refreshToken } = req.body;
 
-//   // Remove the token from the database and clear the cookie
-//   refreshTokensDB = refreshTokensDB.filter((token) => token !== refreshToken);
-//   res.clearCookie("refreshToken");
-//   res.status(200).json({ message: "Logged out" });
-// });
+  // Decode and verify the refresh token
+  const decodedToken = await verifyJwt(refreshToken, jwtSecret);
+
+  if (decodedToken == null || decodedToken.userId == null) {
+    throw new errors.INVALID_ACCESS_TOKEN();
+  }
+
+  // Check if the user exists
+  const isExist = await connection.queryOne(
+    "SELECT user_id, refresh_token FROM public.users WHERE user_id = $1",
+    [decodedToken.userId]
+  );
+
+  if (isExist == null || isExist.user_id == null) {
+    throw new errors.INVALID_USER();
+  }
+
+  // Validate the refresh token
+  if (isExist.refresh_token == null || isExist.refresh_token != refreshToken) {
+    throw new errors.INVALID_ACCESS_TOKEN();
+  }
+
+  // Remove the refresh token from the database
+  await connection.query(
+    "UPDATE public.users SET refresh_token = NULL WHERE user_id = $1",
+    [decodedToken.userId]
+  );
+
+  return { flag: 200, message: "Logout successful" };
+});
 
 

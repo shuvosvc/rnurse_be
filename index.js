@@ -18,7 +18,7 @@ const multipartMiddleware = multipart();
 const cookieParser = require("cookie-parser");
 
 const { getAllUsers,
-  gauth,token
+  gauth, token,logout
 
 } = require("./controllers/user");
 
@@ -64,6 +64,7 @@ app.get(`${process.env.BASE_URL}/`, (req, res) => {
 app.post(`${process.env.BASE_URL}/getAllUsers`, getAllUsers);
 app.post(`${process.env.BASE_URL}/gauth`, gauth);
 app.post(`${process.env.BASE_URL}/token`, token);
+app.post(`${process.env.BASE_URL}/logout`, logout);
 
 
 http.createServer(app).listen(app.get("port"), function () {
