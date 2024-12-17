@@ -11,14 +11,14 @@ const helmet = require("helmet");
 const methodOverride = require("method-override");
 const multipart = require("connect-multiparty");
 
-require("dotenv").config();
 
+const { port, BASE_URL } = require('./config/ApplicationSettings');
 
 const multipartMiddleware = multipart();
 const cookieParser = require("cookie-parser");
 
 const { getAllUsers,
-  gauth, token,logout
+  gauth, token, logout, editUser
 
 } = require("./controllers/user");
 
@@ -32,7 +32,7 @@ const { log } = require("logfmt");
 
 
 /* Routes Config */
-app.set("port", process.env.PORT || ApplicationSettings.port);
+app.set("port", port);
 
 
 /* Middleware Configuration */
@@ -56,15 +56,18 @@ module.exports = app;
 
 
 // Root API Route
-app.get(`${process.env.BASE_URL}/`, (req, res) => {
+app.get(`${BASE_URL}/`, (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
 
-app.post(`${process.env.BASE_URL}/getAllUsers`, getAllUsers);
-app.post(`${process.env.BASE_URL}/gauth`, gauth);
-app.post(`${process.env.BASE_URL}/token`, token);
-app.post(`${process.env.BASE_URL}/logout`, logout);
+app.post(`${BASE_URL}/getAllUsers`, getAllUsers);
+app.post(`${BASE_URL}/gauth`, gauth);
+app.post(`${BASE_URL}/token`, token);
+app.post(`${BASE_URL}/logout`, logout);
+
+
+app.post(`${BASE_URL}/editUser`, editUser);
 
 
 http.createServer(app).listen(app.get("port"), function () {

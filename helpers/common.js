@@ -72,15 +72,16 @@ exports.auth = function auth(extraFields, func) {
         exports.checkParams(req, ["accessToken"]);
         const accessToken = req.body.accessToken;
         const decodedToken = await exports.verifyJwt(accessToken, jwtSecret);
-        if (decodedToken == null || decodedToken.dealerId == null) throw new errors.INVALID_ACCESS_TOKEN();
+        if (decodedToken == null || decodedToken.userId == null) throw new errors.INVALID_ACCESS_TOKEN();
+       
+        const userQuery = "SELECT  user_id, first_name, last_name, phone, email,pinned FROM public.users WHERE user_id=$1";
+        const userInfo = await connection.queryOne(userQuery, [decodedToken.userId]);
 
-        const dealerQuery = "SELECT id, name, phone, highest_discount, default_discount FROM dealer WHERE id=$1";
-        const dealerInfo = await connection.queryOne(dealerQuery, [decodedToken.dealerId]);
 
-        if (dealerInfo == null || dealerInfo.id == null) throw new errors.INVALID_ACCESS_TOKEN();
-        if (dealerInfo.highest_discount != decodedToken.highest_discount || dealerInfo.default_discount != decodedToken.default_discount) throw new errors.INVALID_ACCESS_TOKEN();
 
-        return await func(req, connection, dealerInfo);
+        if (userInfo == null || userInfo.user_id == null) throw new errors.INVALID_ACCESS_TOKEN();
+      
+        return await func(req, connection, userInfo);
     };
 };
 

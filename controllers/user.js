@@ -3,7 +3,8 @@ const errors = require("../helpers/errors");
 const { OAuth2Client } = require("google-auth-library");
 const { jwtSecret, GAUTH_CLIENT_ID } = require('../config/ApplicationSettings');
 const jwt = require('jsonwebtoken');
-
+const bcrypt = require('bcrypt');
+const {  validateEditUser } = require("../validator/user");
 
 exports.getAllUsers = api(
 
@@ -128,6 +129,41 @@ exports.gauth = api(["gauthToken"], async (req, connection) => {
 });
 
 
+// // Endpoint to logout
+// exports.auth = api(["refreshToken"], async (req, connection) => {
+//   const { refreshToken } = req.body;
+
+//   // Decode and verify the refresh token
+//   const decodedToken = await verifyJwt(refreshToken, jwtSecret);
+
+//   if (decodedToken == null || decodedToken.userId == null) {
+//     throw new errors.INVALID_ACCESS_TOKEN();
+//   }
+
+//   // Check if the user exists
+//   const isExist = await connection.queryOne(
+//     "SELECT user_id, refresh_token FROM public.users WHERE user_id = $1",
+//     [decodedToken.userId]
+//   );
+
+//   if (isExist == null || isExist.user_id == null) {
+//     throw new errors.INVALID_USER();
+//   }
+
+//   // Validate the refresh token
+//   if (isExist.refresh_token == null || isExist.refresh_token != refreshToken) {
+//     throw new errors.INVALID_ACCESS_TOKEN();
+//   }
+
+//   // Remove the refresh token from the database
+//   await connection.query(
+//     "UPDATE public.users SET refresh_token = NULL WHERE user_id = $1",
+//     [decodedToken.userId]
+//   );
+
+//   return { flag: 200, message: "Logout successful" };
+// });
+
 exports.token = api(["refreshToken"], async(req, connection) => {
   const {refreshToken:refreshToken_body} = req.body;
  
@@ -172,8 +208,6 @@ exports.token = api(["refreshToken"], async(req, connection) => {
 });
 
 
-
-// Endpoint to logout
 exports.logout = api(["refreshToken"], async (req, connection) => {
   const { refreshToken } = req.body;
 
@@ -208,4 +242,47 @@ exports.logout = api(["refreshToken"], async (req, connection) => {
   return { flag: 200, message: "Logout successful" };
 });
 
+
+
+exports.editUser = api( auth(async (req, connection, userInfo) => {
+  await validateEditUser(req);
+
+  let { user_id, accessToken, ...updateFields } = req.body;
+
+  if (Object.keys(updateFields).length === 0) throw new errors.NO_FIELDS_PROVIDED();
+
+  
+  if (updateFields.phone) {
+    
+    const existingPhone = await connection.queryOne(
+        'SELECT user_id FROM users WHERE phone = $1 AND user_id != $2',
+        [updateFields.phone, userInfo.user_id]
+    );
+
+    if (existingPhone) {
+        throw new errors.INVALID_FIELDS_PROVIDED('Phone number already in use.');
+    }
+}
+
+
+
+  if (updateFields.password) {
+    const saltRounds = 10;
+    updateFields.password = await bcrypt.hash(updateFields.password, saltRounds);
+  }
+
+
+  const setClause = Object.keys(updateFields).map((field, index) => `${field}=$${index + 1}`).join(', ');
+
+
+  const values = Object.values(updateFields);
+
+
+  const sql_user_update = `UPDATE users SET ${setClause} WHERE user_id=$${values.length + 1}`;
+  values.push(userInfo.user_id);
+
+  await connection.query(sql_user_update, values);
+
+  return { flag: 200, message: "User details updated successfully." };
+}));
 
