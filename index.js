@@ -18,7 +18,7 @@ const multipartMiddleware = multipart();
 const cookieParser = require("cookie-parser");
 
 const { getAllUsers,
-  gauth, token, logout, editUser
+  gauth,auth, token, logout, editUser
 
 } = require("./controllers/user");
 
@@ -63,6 +63,7 @@ app.get(`${BASE_URL}/`, (req, res) => {
 
 app.post(`${BASE_URL}/getAllUsers`, getAllUsers);
 app.post(`${BASE_URL}/gauth`, gauth);
+app.post(`${BASE_URL}/auth`, auth);
 app.post(`${BASE_URL}/token`, token);
 app.post(`${BASE_URL}/logout`, logout);
 

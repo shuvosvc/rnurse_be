@@ -3,6 +3,23 @@ const validator = require('validator');
 const errors = require('../helpers/errors');
 
 
+exports.validateAuth = async  (req) =>{
+
+    const { email ,password} = req.body;
+
+
+ 
+    if (!validator.isEmail(email)) {
+        throw new errors.INVALID_FIELDS_PROVIDED('Invalid email format.');
+    }
+
+    if (!validator.isLength(password, { min: 8, max: 12 })) {
+        throw new errors.INVALID_FIELDS_PROVIDED('Password must be between 8 and 12 characters.');
+    }
+
+
+
+}
 exports.validateEditUser = async  (req) =>{
     const allowedFields = [
         'first_name', 'last_name', 'phone', 'gender', 'blood_group', 'birthday', 'address', 'chronic_disease', 'password'

@@ -20,6 +20,7 @@ exports.QError = QError;
 exports.PARAMETER_MISSING = QError.bind(null, 100, "Please fill all the required fields.");
 exports.ERROR_IN_EXECUTION = QError.bind(null, 102, "Something went wrong! Please try again later.");
 exports.UNAUTHORIZED = QError.bind(null, 403, "You don't have authority for this action.");
+exports.INVALID_EMAIL_PASS = QError.bind(null, 400, "Invalid email or password.");
 exports.INVALID_ACCESS_TOKEN = QError.bind(null, 401, "You have been logged out. Please log in again.");
 exports.NO_FIELDS_PROVIDED = QError.bind(null, 400, "No fields provided.");
 exports.INVALID_FIELDS_PROVIDED = QError.bind(null, 422, "Invalid data provided.");

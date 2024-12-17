@@ -4,7 +4,7 @@ const { OAuth2Client } = require("google-auth-library");
 const { jwtSecret, GAUTH_CLIENT_ID } = require('../config/ApplicationSettings');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const {  validateEditUser } = require("../validator/user");
+const {  validateEditUser ,validateAuth} = require("../validator/user");
 
 exports.getAllUsers = api(
 
@@ -129,40 +129,46 @@ exports.gauth = api(["gauthToken"], async (req, connection) => {
 });
 
 
-// // Endpoint to logout
-// exports.auth = api(["refreshToken"], async (req, connection) => {
-//   const { refreshToken } = req.body;
 
-//   // Decode and verify the refresh token
-//   const decodedToken = await verifyJwt(refreshToken, jwtSecret);
+exports.auth = api([ "email", "password"],async (req, connection) => {
+await validateAuth(req);
+    const { email, password } = req.body;
 
-//   if (decodedToken == null || decodedToken.userId == null) {
-//     throw new errors.INVALID_ACCESS_TOKEN();
-//   }
 
-//   // Check if the user exists
-//   const isExist = await connection.queryOne(
-//     "SELECT user_id, refresh_token FROM public.users WHERE user_id = $1",
-//     [decodedToken.userId]
-//   );
 
-//   if (isExist == null || isExist.user_id == null) {
-//     throw new errors.INVALID_USER();
-//   }
+    const isExist = await connection.queryOne(
+        'SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned ,password FROM users WHERE email = $1',
+        [email]
+    );
 
-//   // Validate the refresh token
-//   if (isExist.refresh_token == null || isExist.refresh_token != refreshToken) {
-//     throw new errors.INVALID_ACCESS_TOKEN();
-//   }
+    if (isExist == null || isExist.user_id == null ) throw new errors.INVALID_USER();
 
-//   // Remove the refresh token from the database
-//   await connection.query(
-//     "UPDATE public.users SET refresh_token = NULL WHERE user_id = $1",
-//     [decodedToken.userId]
-//   );
+    // 3. Compare password
+    const isPasswordValid = await bcrypt.compare(password, isExist.password);
 
-//   return { flag: 200, message: "Logout successful" };
-// });
+    if (!isPasswordValid) {
+        throw new errors.INVALID_EMAIL_PASS();
+    }
+
+     // Generate a new access token
+     const newAccessToken = jwt.sign(
+      {
+        userId: isExist.user_id,
+        firstName: isExist.first_name,
+        lastName: isExist.last_name,
+        phone: isExist.phone,
+        email: isExist.email,
+        image: isExist.profile_image_url,
+        pinned: isExist.pinned,
+        
+      },
+      jwtSecret,
+      { expiresIn: "1h" }
+    );
+  
+    return { flag: 200, accessToken:newAccessToken }
+});
+
 
 exports.token = api(["refreshToken"], async(req, connection) => {
   const {refreshToken:refreshToken_body} = req.body;
