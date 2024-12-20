@@ -253,7 +253,7 @@ exports.logout = api(["refreshToken"], async (req, connection) => {
 exports.editUser = api( auth(async (req, connection, userInfo) => {
   await validateEditUser(req);
 
-  let { user_id, accessToken, ...updateFields } = req.body;
+  let { accessToken, ...updateFields } = req.body;
 
 
   
@@ -268,7 +268,6 @@ exports.editUser = api( auth(async (req, connection, userInfo) => {
         throw new errors.INVALID_FIELDS_PROVIDED('Phone number already in use.');
     }
 }
-
 
 
   if (updateFields.password) {

@@ -26,7 +26,7 @@ const {
   editUser
 } = require("./controllers/user");
 const {
-  addMember
+  addMember,editMember
 } = require("./controllers/member");
 
 
@@ -79,6 +79,7 @@ app.post(`${BASE_URL}/editUser`, editUser);
 
 
 app.post(`${BASE_URL}/addMember`, addMember);
+app.post(`${BASE_URL}/editMember`, editMember);
 
 
 http.createServer(app).listen(app.get("port"), function () {
