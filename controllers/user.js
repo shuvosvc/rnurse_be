@@ -45,7 +45,7 @@ exports.gauth = api(["gauthToken"], async (req, connection) => {
 
   // Check if the user already exists
   const isExist = await connection.queryOne(
-    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned FROM public.users WHERE email = $1",
+    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned FROM public.users WHERE email = $1 and user_id=mc_id",
     [payload.email]
   );
 
@@ -255,7 +255,6 @@ exports.editUser = api( auth(async (req, connection, userInfo) => {
 
   let { user_id, accessToken, ...updateFields } = req.body;
 
-  if (Object.keys(updateFields).length === 0) throw new errors.NO_FIELDS_PROVIDED();
 
   
   if (updateFields.phone) {

@@ -17,10 +17,17 @@ const { port, BASE_URL } = require('./config/ApplicationSettings');
 const multipartMiddleware = multipart();
 const cookieParser = require("cookie-parser");
 
-const { getAllUsers,
-  gauth,auth, token, logout, editUser
-
+const {
+  getAllUsers,
+  gauth,
+  auth,
+  token,
+  logout,
+  editUser
 } = require("./controllers/user");
+const {
+  addMember
+} = require("./controllers/member");
 
 
 
@@ -69,6 +76,9 @@ app.post(`${BASE_URL}/logout`, logout);
 
 
 app.post(`${BASE_URL}/editUser`, editUser);
+
+
+app.post(`${BASE_URL}/addMember`, addMember);
 
 
 http.createServer(app).listen(app.get("port"), function () {
