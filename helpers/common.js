@@ -74,7 +74,7 @@ exports.auth = function auth(extraFields, func) {
         const decodedToken = await exports.verifyJwt(accessToken, jwtSecret);
         if (decodedToken == null || decodedToken.userId == null) throw new errors.INVALID_ACCESS_TOKEN();
        
-        const userQuery = "SELECT  user_id, first_name, last_name, phone, email,pinned FROM public.users WHERE user_id=$1";
+        const userQuery = "SELECT  user_id, first_name, last_name, phone, email,pinned FROM public.users WHERE user_id=$1 and deleted=false";
         const userInfo = await connection.queryOne(userQuery, [decodedToken.userId]);
 
 
