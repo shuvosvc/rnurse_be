@@ -11,8 +11,7 @@ const helmet = require("helmet");
 const methodOverride = require("method-override");
 const multipart = require("connect-multiparty");
 
-
-const { port, BASE_URL } = require('./config/ApplicationSettings');
+const { port, BASE_URL } = require("./config/ApplicationSettings");
 
 const multipartMiddleware = multipart();
 const cookieParser = require("cookie-parser");
@@ -23,24 +22,17 @@ const {
   auth,
   token,
   logout,
-  editUser
+  editUser,
 } = require("./controllers/user");
-const {
-  addMember,editMember
-} = require("./controllers/member");
-
-
+const { addMember, editMember } = require("./controllers/member");
 
 require("dotenv").config();
 
 const ApplicationSettings = require("./config/ApplicationSettings");
 const { log } = require("logfmt");
 
-
-
 /* Routes Config */
 app.set("port", port);
-
 
 /* Middleware Configuration */
 
@@ -60,13 +52,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 module.exports = app;
 
-
-
 // Root API Route
 app.get(`${BASE_URL}/`, (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
-
 
 app.post(`${BASE_URL}/getAllUsers`, getAllUsers);
 app.post(`${BASE_URL}/gauth`, gauth);
@@ -74,14 +63,11 @@ app.post(`${BASE_URL}/auth`, auth);
 app.post(`${BASE_URL}/token`, token);
 app.post(`${BASE_URL}/logout`, logout);
 
-
 app.post(`${BASE_URL}/editUser`, editUser);
-
 
 app.post(`${BASE_URL}/addMember`, addMember);
 app.post(`${BASE_URL}/editMember`, editMember);
 
-
-http.createServer(app).listen(app.get("port"), function () {
+http.createServer(app).listen(app.get("port"), "0.0.0.0", function () {
   console.log("🚀 Server is up and running on port " + app.get("port") + " 🎉");
 });
