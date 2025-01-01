@@ -1,25 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Sign-In</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body>
     <h1>Sign in with Google</h1>
-    <div id="g_id_onload"
-         data-client_id="338409353893-24e1vvgu343r0ivpr8d2f5jq5h0mae8r.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse">
+    <div id="g_id_onload" data-client_id="338409353893-24e1vvgu343r0ivpr8d2f5jq5h0mae8r.apps.googleusercontent.com"
+        data-callback="handleCredentialResponse">
     </div>
 
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="rectangular"
-         data-theme="outline"
-         data-text="sign_in_with"
-         data-size="large"
-         data-logo_alignment="left">
+    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="sign_in_with"
+        data-size="large" data-logo_alignment="left">
     </div>
 
     <script>
@@ -27,7 +23,7 @@
             console.log("Encoded JWT ID token: " + response.credential);
 
             // Send the token to your backend for verification
-            fetch("http://localhost:5000/v1/gauth", {
+            fetch("http://localhost:7000/v1/gauth", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -44,4 +40,5 @@
         }
     </script>
 </body>
+
 </html>
