@@ -165,8 +165,22 @@ await validateAuth(req);
       jwtSecret,
       { expiresIn: "1h" }
     );
+
+        // Generate a refresh token
+        const refreshToken = jwt.sign(
+          { userId: isExist.user_id, email: isExist.email },
+          jwtSecret,
+          { expiresIn: "3d" }
+        );
+    
+    
+        // Save refresh token
+        await connection.query(
+          "UPDATE public.users SET refresh_token = $1 WHERE user_id = $2",
+          [refreshToken, isExist.user_id]
+        );
   
-    return { flag: 200, accessToken:newAccessToken }
+    return { flag: 200, accessToken:newAccessToken ,refreshToken}
 });
 
 
