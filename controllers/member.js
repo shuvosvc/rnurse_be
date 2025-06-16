@@ -90,3 +90,47 @@ exports.editMember = api(["member_id"],
     return { flag: 200, message: "User details updated successfully." };
   })
 );
+
+
+
+exports.getAllMember = api(
+  auth(async (req, connection, userInfo) => {
+    const { limit = 10, offset = 0 } = req.body;
+
+      // Validate limit and offset to ensure they're integers
+  const parsedLimit = parseInt(limit, 10);
+  const parsedOffset = parseInt(offset, 10);
+
+  if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
+    throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
+  }
+
+    const members = await connection.query(
+      `
+      SELECT user_id, mc_id, first_name, last_name, phone, email, gender, blood_group, birthday, profile_image_url, address, chronic_disease,  created_at
+      FROM users
+      WHERE mc_id = $1 and deleted = false
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+      `,
+      [userInfo.user_id, parsedLimit, parsedOffset]
+    );
+
+    const total = await connection.queryOne(
+      `
+      SELECT COUNT(*) AS count
+      FROM users
+      WHERE mc_id = $1
+      `,
+      [userInfo.user_id]
+    );
+
+    return {
+      flag: 200,
+      members,
+      total: parseInt(total.count),
+      limit,
+      offset,
+    };
+  })
+);
