@@ -25,6 +25,7 @@ const {
   editUser,
 } = require("./controllers/user");
 const { addMember, editMember,getAllMember } = require("./controllers/member");
+const { createHealthMetric } = require("./controllers/healthMetric");
 
 require("dotenv").config();
 
@@ -68,6 +69,8 @@ app.post(`${BASE_URL}/editUser`, editUser);
 app.post(`${BASE_URL}/addMember`, addMember);
 app.post(`${BASE_URL}/editMember`, editMember);
 app.post(`${BASE_URL}/getAllMember`, getAllMember);
+
+app.post(`${BASE_URL}/createHealthMetric`, createHealthMetric);
 
 http.createServer(app).listen(app.get("port"), "0.0.0.0", function () {
   console.log("🚀 Server is up and running on port " + app.get("port") + " 🎉");
