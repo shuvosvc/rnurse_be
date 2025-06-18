@@ -16,9 +16,16 @@ exports.createHealthMetric = api(["member_id"],
       [member_id, userInfo.user_id]
     );
 
-
-    
     if (isExist == null || isExist.user_id == null) throw new errors.UNAUTHORIZED();
+
+
+
+    const isExistHM = await connection.queryOne(
+      'SELECT user_id FROM health_metrics WHERE  user_id = $1 ',
+      [member_id]
+    );
+
+    if (isExistHM ) throw new errors.ALL_READY_EXIST("Health metric already exists for this member.");
 
 
 
@@ -52,92 +59,47 @@ exports.createHealthMetric = api(["member_id"],
   })
 );
 
-exports.editMember = api(["member_id"],
-  auth( async (req, connection, userInfo) => {
-
-    await validateeditMember(req);
 
 
-    let { member_id, accessToken, ...updateFields } = req.body;
 
-    if (updateFields.phone) {
-      const existingPhone = await connection.queryOne(
-        'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2',
-        [updateFields.phone, userInfo.user_id]
-      );
+exports.editHealthMetric = api(["id"], 
+  auth(async (req, connection, userInfo) => {
 
-      if (existingPhone) {
-        throw new errors.INVALID_FIELDS_PROVIDED('Phone is already registered.');
-      }
+    await validateCreateHealthMetric(req); // ✅ reusing the create validator
+
+    const { id, weight, bp_systolic, bp_diastolic, sugar_level, o2_level } = req.body;
+
+    const optionalFields = { weight, bp_systolic, bp_diastolic, sugar_level, o2_level };
+
+    const updates = Object.entries(optionalFields)
+      .filter(([_, value]) => value !== undefined && value !== null);
+
+    if (updates.length === 0) {
+      throw new errors.INVALID_FIELDS_PROVIDED("No valid fields provided to update.");
     }
 
-    const isExist = await connection.queryOne(
-      'SELECT user_id FROM users WHERE  user_id = $1 and mc_id = $2',
-      [member_id, userInfo.user_id]
+    // 🔒 Step 1: Validate metric exists and belongs to the same MC user
+    const metric = await connection.queryOne(
+      `SELECT hm.id FROM health_metrics hm 
+       JOIN users u ON hm.user_id = u.user_id 
+       WHERE hm.id = $1 AND u.mc_id = $2`,
+      [id, userInfo.user_id]
     );
 
+    if (!metric) throw new errors.UNAUTHORIZED("you don't have authority to edit this health metric.");
 
-    
-    if (isExist == null || isExist.user_id == null) throw new errors.UNAUTHORIZED();
+    // ⚙️ Step 2: Build dynamic update query
+    const setClause = updates.map(([key], idx) => `${key} = $${idx + 1}`).join(', ');
+    const values = updates.map(([_, value]) => value);
+    values.push(id); // for WHERE clause
 
+    const updateSql = `UPDATE health_metrics SET ${setClause} WHERE id = $${values.length}`;
 
-
-    const setClause = Object.keys(updateFields).map((field, index) => `${field}=$${index + 1}`).join(', ');
-
-
-    const values = Object.values(updateFields);
-
-
-    const sql_user_update = `UPDATE users SET ${setClause} WHERE user_id=$${values.length + 1}`;
-    values.push(isExist.user_id);
-
-    await connection.query(sql_user_update, values);
-
-
-    return { flag: 200, message: "User details updated successfully." };
-  })
-);
-
-
-
-exports.getAllMember = api(
-  auth(async (req, connection, userInfo) => {
-    const { limit = 10, offset = 0 } = req.body;
-
-      // Validate limit and offset to ensure they're integers
-  const parsedLimit = parseInt(limit, 10);
-  const parsedOffset = parseInt(offset, 10);
-
-  if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
-    throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
-  }
-
-    const members = await connection.query(
-      `
-      SELECT user_id, mc_id, first_name, last_name, phone, email, gender, blood_group, birthday, profile_image_url, address, chronic_disease,  created_at
-      FROM users
-      WHERE mc_id = $1 and deleted = false
-      ORDER BY created_at DESC
-      LIMIT $2 OFFSET $3
-      `,
-      [userInfo.user_id, parsedLimit, parsedOffset]
-    );
-
-    const total = await connection.queryOne(
-      `
-      SELECT COUNT(*) AS count
-      FROM users
-      WHERE mc_id = $1
-      `,
-      [userInfo.user_id]
-    );
+    await connection.query(updateSql, values);
 
     return {
       flag: 200,
-      members,
-      total: parseInt(total.count),
-      limit,
-      offset,
+      message: "Health metric updated successfully."
     };
   })
 );
