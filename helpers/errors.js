@@ -27,3 +27,4 @@ exports.INVALID_FIELDS_PROVIDED = QError.bind(null, 422, "Invalid data provided.
 exports.INVALID_USER = QError.bind(null, 404, "User not registered or not found.");
 
 exports.ALL_READY_EXIST = QError.bind(null, 409, "This data already exists.");
+exports.NOT_FOUND = QError.bind(null, 404, "Data not found.");

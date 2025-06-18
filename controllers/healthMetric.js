@@ -21,7 +21,7 @@ exports.createHealthMetric = api(["member_id"],
 
 
     const isExistHM = await connection.queryOne(
-      'SELECT user_id FROM health_metrics WHERE  user_id = $1 ',
+      'SELECT user_id FROM health_metrics WHERE  user_id = $1 and deleted = false',
       [member_id]
     );
 
@@ -82,11 +82,11 @@ exports.editHealthMetric = api(["id"],
     const metric = await connection.queryOne(
       `SELECT hm.id FROM health_metrics hm 
        JOIN users u ON hm.user_id = u.user_id 
-       WHERE hm.id = $1 AND u.mc_id = $2`,
+       WHERE hm.id = $1 AND u.mc_id = $2 and hm.deleted = false`,
       [id, userInfo.user_id]
     );
 
-    if (!metric) throw new errors.UNAUTHORIZED("you don't have authority to edit this health metric.");
+    if (!metric) throw new errors.NOT_FOUND("Health metric not found or you are not authorized to edit it.");
 
     // ⚙️ Step 2: Build dynamic update query
     const setClause = updates.map(([key], idx) => `${key} = $${idx + 1}`).join(', ');
@@ -100,6 +100,36 @@ exports.editHealthMetric = api(["id"],
     return {
       flag: 200,
       message: "Health metric updated successfully."
+    };
+  })
+);
+
+
+
+
+exports.deleteHealthMetric = api(["id"], 
+  auth(async (req, connection, userInfo) => {
+    const { id } = req.body;
+
+    // Step 1: Check ownership through mc_id
+    const metric = await connection.queryOne(
+      `SELECT hm.id FROM health_metrics hm
+       JOIN users u ON hm.user_id = u.user_id
+       WHERE hm.id = $1 AND u.mc_id = $2 AND hm.deleted = false`,
+      [id, userInfo.user_id]
+    );
+
+    if (!metric) throw new errors.NOT_FOUND("Health metric not found or you are not authorized to delete it.");
+
+    // Step 2: Perform soft delete
+    await connection.query(
+      `UPDATE health_metrics SET deleted = true WHERE id = $1`,
+      [id]
+    );
+
+    return {
+      flag: 200,
+      message: "Health metric deleted successfully."
     };
   })
 );
