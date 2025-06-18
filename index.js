@@ -26,7 +26,7 @@ const {
 } = require("./controllers/user");
 const { addMember, editMember,getAllMember } = require("./controllers/member");
 const { createHealthMetric,editHealthMetric,deleteHealthMetric,getHealthMetric } = require("./controllers/healthMetric");
-const { getAllReports,getAllprscription,getCombainedDocs } = require("./controllers/doc");
+const { getAllReports,getAllprscription,getCombainedDocs,editReportStatus,editprescriptionStatus } = require("./controllers/doc");
 
 require("dotenv").config();
 
@@ -79,6 +79,8 @@ app.post(`${BASE_URL}/getHealthMetric`, getHealthMetric);
 app.post(`${BASE_URL}/getAllReports`, getAllReports);
 app.post(`${BASE_URL}/getAllprscription`, getAllprscription);
 app.post(`${BASE_URL}/getCombainedDocs`, getCombainedDocs);
+app.post(`${BASE_URL}/editReportStatus`, editReportStatus);
+app.post(`${BASE_URL}/editprescriptionStatus`, editprescriptionStatus);
 
 http.createServer(app).listen(app.get("port"), "0.0.0.0", function () {
   console.log("🚀 Server is up and running on port " + app.get("port") + " 🎉");
