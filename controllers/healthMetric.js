@@ -133,3 +133,38 @@ exports.deleteHealthMetric = api(["id"],
     };
   })
 );
+
+
+exports.getHealthMetric = api(["member_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id } = req.body;
+
+    // Step 1: Verify the member belongs to this MC user
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2`,
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s metrics.");
+    }
+
+    // Step 2: Fetch all non-deleted health metrics for this member
+    const metrics = await connection.queryOne(
+      `SELECT id, weight, bp_systolic, bp_diastolic, sugar_level, o2_level, created_at
+       FROM health_metrics
+       WHERE user_id = $1 AND deleted = false
+       ORDER BY created_at DESC`,
+      [member_id]
+    );
+
+    if (!metrics) {
+      throw new errors.NOT_FOUND("No health metrics found for this member.");
+    }
+    return {
+      flag: 200,
+      data: metrics,
+      message: "Health metrics fetched successfully."
+    };
+  })
+);
