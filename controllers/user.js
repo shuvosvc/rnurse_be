@@ -271,7 +271,7 @@ exports.editUser = api( auth(async (req, connection, userInfo) => {
 
 
   
-  if (updateFields.phone && updateFields.phone.trim() !== userInfo.phone) {
+  if (updateFields.phone && updateFields.phone.trim() != userInfo.phone) {
     
     const existingPhone = await connection.queryOne(
         'SELECT user_id FROM users WHERE phone = $1 AND user_id != $2 AND deleted = false',

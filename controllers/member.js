@@ -66,7 +66,7 @@ exports.editMember = api(["member_id"],
 
 
 
-    if (updateFields.phone && updateFields.phone.trim() !== isExist.phone) {
+    if (updateFields.phone && updateFields.phone.trim() != isExist.phone) {
       const existingPhone = await connection.queryOne(
         'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2 and deleted = false',
         [updateFields.phone, userInfo.user_id]
