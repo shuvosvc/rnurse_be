@@ -45,7 +45,7 @@ exports.gauth = api(["gauthToken"], async (req, connection) => {
 
   // Check if the user already exists
   const isExist = await connection.queryOne(
-    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned FROM public.users WHERE email = $1 and user_id=mc_id",
+    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned FROM public.users WHERE email = $1 and user_id=mc_id and deleted = false",
     [payload.email]
   );
 
@@ -137,7 +137,7 @@ await validateAuth(req);
 
 
     const isExist = await connection.queryOne(
-        'SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned ,password FROM users WHERE email = $1',
+        'SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned ,password FROM users WHERE email = $1 and deleted = false',
         [email]
     );
 
@@ -196,7 +196,7 @@ exports.token = api(["refreshToken"], async(req, connection) => {
 
   
   const isExist = await connection.queryOne(
-    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned,refresh_token FROM public.users WHERE user_id = $1",
+    "SELECT user_id, first_name, last_name, phone, email, profile_image_url,pinned,refresh_token FROM public.users WHERE user_id = $1 and deleted = false",
     [decodedToken_body.userId]
   ); 
   
@@ -240,7 +240,7 @@ exports.logout = api(["refreshToken"], async (req, connection) => {
 
   // Check if the user exists
   const isExist = await connection.queryOne(
-    "SELECT user_id, refresh_token FROM public.users WHERE user_id = $1",
+    "SELECT user_id, refresh_token FROM public.users WHERE user_id = $1 and deleted = false",
     [decodedToken.userId]
   );
 
@@ -271,10 +271,10 @@ exports.editUser = api( auth(async (req, connection, userInfo) => {
 
 
   
-  if (updateFields.phone) {
+  if (updateFields.phone && updateFields.phone.trim() !== userInfo.phone) {
     
     const existingPhone = await connection.queryOne(
-        'SELECT user_id FROM users WHERE phone = $1 AND user_id != $2',
+        'SELECT user_id FROM users WHERE phone = $1 AND user_id != $2 AND deleted = false',
         [updateFields.phone, userInfo.user_id]
     );
 

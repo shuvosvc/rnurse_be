@@ -15,7 +15,7 @@ exports.addMember = api(
 
     if (insertFields.phone) {
       const existingPhone = await connection.queryOne(
-        'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2',
+        'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2 and deleted = false',
         [insertFields.phone, userInfo.user_id]
       );
 
@@ -54,7 +54,7 @@ exports.editMember = api(["member_id"],
 
     if (updateFields.phone) {
       const existingPhone = await connection.queryOne(
-        'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2',
+        'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2 and deleted = false',
         [updateFields.phone, userInfo.user_id]
       );
 
@@ -64,7 +64,7 @@ exports.editMember = api(["member_id"],
     }
 
     const isExist = await connection.queryOne(
-      'SELECT user_id FROM users WHERE  user_id = $1 and mc_id = $2',
+      'SELECT user_id FROM users WHERE  user_id = $1 and mc_id = $2 and deleted = false',
       [member_id, userInfo.user_id]
     );
 
@@ -88,6 +88,36 @@ exports.editMember = api(["member_id"],
 
 
     return { flag: 200, message: "User details updated successfully." };
+  })
+);
+
+
+
+exports.deleteMember = api(["member_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id } = req.body;
+
+    if(member_id ==userInfo.user_id){
+      throw new errors.UNAUTHORIZED("Nice try !😏");
+    }
+
+    // Validate that the member exists and belongs to the current user
+    const member = await connection.queryOne(
+      'SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 and deleted = false',
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("Member not found or access denied.");
+    }
+
+    // Perform deletion
+    await connection.query(
+      'Up',
+      [member_id, userInfo.user_id]
+    );
+
+    return { flag: 200, message: "Member deleted successfully." };
   })
 );
 
