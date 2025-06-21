@@ -24,7 +24,7 @@ const {
   logout,
   editUser,
 } = require("./controllers/user");
-const { addMember, editMember,getAllMember,deleteMember } = require("./controllers/member");
+const { addMember, editMember,getAllMember,deleteMember ,getUserInfo} = require("./controllers/member");
 const { createHealthMetric,editHealthMetric,deleteHealthMetric,getHealthMetric } = require("./controllers/healthMetric");
 const { getAllReports,getAllprscription,getCombainedDocs,editReportStatus,editprescriptionStatus } = require("./controllers/doc");
 
@@ -66,7 +66,7 @@ app.post(`${BASE_URL}/token`, token);
 app.post(`${BASE_URL}/logout`, logout);
 
 app.post(`${BASE_URL}/editUser`, editUser);
-
+app.post(`${BASE_URL}/getUserInfo`, getUserInfo);
 app.post(`${BASE_URL}/addMember`, addMember);
 app.post(`${BASE_URL}/editMember`, editMember);
 app.post(`${BASE_URL}/getAllMember`, getAllMember);
