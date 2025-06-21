@@ -1,4 +1,4 @@
-const { api, auth } = require("../helpers/common");
+const { api, auth,generateAlphaNumericToken,formatDateTime } = require("../helpers/common");
 const errors = require("../helpers/errors");
 
 
@@ -305,6 +305,40 @@ exports.editprescriptionStatus = api(["member_id", "prescriptions", "status"],
       flag: 200,
       message: `Updated ${updatedCount} prescription(s).`,
       not_found: notFoundCount > 0 ? `${notFoundCount} prescription(s) were not found or unauthorized.` : 0
+    };
+  })
+);
+
+
+
+exports.generateTempUrl = api(["member_id", "expires_in"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, expires_in } = req.body;
+
+    // Verify ownership of the member
+    const member = await connection.queryOne(
+      "SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false",
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("User not found or unauthorized.");
+    }
+
+    const token = generateAlphaNumericToken(10);
+const expiresAt = new Date(Date.now() + parseInt(expires_in) * 1000);
+    await connection.query(
+      `INSERT INTO token (user_id, token, expires_at)
+       VALUES ($1, $2, $3)`,
+      [member_id, token, formatDateTime(expiresAt)]
+    );
+
+    return {
+      flag: 200,
+      message: "Temporary token generated successfully.",
+
+        token
+
     };
   })
 );

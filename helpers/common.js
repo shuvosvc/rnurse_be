@@ -20,6 +20,28 @@ exports.checkParams = function checkParams(req, requiredParams) {
     }
 }
 
+exports.generateAlphaNumericToken=(length = 10)=>{
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "";
+  for (let i = 0; i < length; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+
+exports.formatDateTime=(date) =>{
+  const pad = (n, z = 2) => ('00' + n).slice(-z);
+  return (
+    date.getFullYear() + '-' +
+    pad(date.getMonth() + 1) + '-' +
+    pad(date.getDate()) + ' ' +
+    pad(date.getHours()) + ':' +
+    pad(date.getMinutes()) + ':' +
+    pad(date.getSeconds()) + '.' +
+    pad(date.getMilliseconds(), 3)
+  );
+}
 
 exports.verifyJwt = async (token, secret) => {
   return new Promise((resolve, reject) => {
