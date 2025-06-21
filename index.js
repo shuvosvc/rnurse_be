@@ -47,6 +47,8 @@ app.use(require("./utils/logger"));
 app.use(helmet());
 app.use(compression());
 
+
+
 if ("development" === app.get("env") || "local" === app.get("env")) {
   app.use(errorhandler());
 }
@@ -58,6 +60,10 @@ module.exports = app;
 app.get(`${BASE_URL}/`, (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
+
+
+require('./utils/cleanupScheduler');
+
 
 app.post(`${BASE_URL}/getAllUsers`, getAllUsers);
 app.post(`${BASE_URL}/gauth`, gauth);
