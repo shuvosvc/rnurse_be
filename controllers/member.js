@@ -108,12 +108,12 @@ exports.deleteMember = api(["member_id"],
     );
 
     if (!member) {
-      throw new errors.UNAUTHORIZED("Member not found or access denied.");
+      throw new errors.UNAUTHORIZED("Member not found");
     }
 
     // Perform deletion
     await connection.query(
-      'Up',
+      'Update users SET deleted = true WHERE user_id = $1 AND mc_id = $2',
       [member_id, userInfo.user_id]
     );
 
