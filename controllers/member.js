@@ -52,7 +52,21 @@ exports.editMember = api(["member_id"],
 
     let { member_id, accessToken, ...updateFields } = req.body;
 
-    if (updateFields.phone) {
+
+
+    const isExist = await connection.queryOne(
+      'SELECT user_id ,phone FROM users WHERE  user_id = $1 and mc_id = $2 and deleted = false',
+      [member_id, userInfo.user_id]
+    );
+
+
+    
+    if (isExist == null || isExist.user_id == null) throw new errors.UNAUTHORIZED();
+
+
+
+
+    if (updateFields.phone && updateFields.phone.trim() !== isExist.phone) {
       const existingPhone = await connection.queryOne(
         'SELECT user_id FROM users WHERE phone = $1 AND mc_id = $2 and deleted = false',
         [updateFields.phone, userInfo.user_id]
@@ -62,17 +76,6 @@ exports.editMember = api(["member_id"],
         throw new errors.INVALID_FIELDS_PROVIDED('Phone is already registered.');
       }
     }
-
-    const isExist = await connection.queryOne(
-      'SELECT user_id FROM users WHERE  user_id = $1 and mc_id = $2 and deleted = false',
-      [member_id, userInfo.user_id]
-    );
-
-
-    console.log("dddddddddddd",isExist);
-    
-    if (isExist == null || isExist.user_id == null) throw new errors.UNAUTHORIZED();
-
 
 
     const setClause = Object.keys(updateFields).map((field, index) => `${field}=$${index + 1}`).join(', ');
