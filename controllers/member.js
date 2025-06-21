@@ -172,7 +172,7 @@ exports.getUserInfo = api(["member_id"],
     const { member_id } = req.body;
 
     const member = await connection.queryOne(
-      `SELECT user_id, mc_id, first_name, last_name, phone, email, gender, blood_group, birthday, profile_image_url, address, chronic_disease,  created_at
+      `SELECT user_id, mc_id, first_name, last_name, phone, email, gender, blood_group, birthday, profile_image_url, address, chronic_disease,pinned,  created_at
        FROM users
        WHERE user_id = $1 AND mc_id = $2 and deleted = false`,
       [member_id, userInfo.user_id]
