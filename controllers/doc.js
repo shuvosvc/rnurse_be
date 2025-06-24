@@ -39,7 +39,7 @@ exports.getAllReports = api(["member_id"],
     // Step 3: Attach images for each report
     for (let report of reports) {
       const images = await connection.query(
-        `SELECT resiged, thumb FROM report_images WHERE report_id = $1 AND deleted = false ORDER BY created_at DESC`,
+        `SELECT id as report_img_id, resiged, thumb FROM report_images WHERE report_id = $1 AND deleted = false ORDER BY created_at ASC`,
         [report.id]
       );
       report.images = images; // Add images array to each report
@@ -61,40 +61,51 @@ exports.getAllReports = api(["member_id"],
 );
 
 
-exports.getAllprscription = api(["member_id"],
+
+exports.getAllPrescription = api(["member_id"],
   auth(async (req, connection, userInfo) => {
     const { member_id, limit = 20, offset = 0 } = req.body;
-      // Validate limit and offset to ensure they're integers
-  const parsedLimit = parseInt(limit, 10);
-  const parsedOffset = parseInt(offset, 10);
 
- if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
-    throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
-  }
+    const parsedLimit = parseInt(limit, 10);
+    const parsedOffset = parseInt(offset, 10);
 
-    // Step 1: Verify member is under the MC
+    if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
+    }
+
+    // Step 1: Authorization check
     const member = await connection.queryOne(
-      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2`,
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
       [member_id, userInfo.user_id]
     );
 
     if (!member) {
-      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s reports.");
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s prescriptions.");
     }
 
-    // Step 2: Get paginated reports
+    // Step 2: Fetch paginated prescriptions
     const prescriptions = await connection.query(
-      `SELECT id, resized, thumbnail, shared, created_at
-       FROM prescription
+      `SELECT id, shared, department, doctor_name, visited_date, created_at
+       FROM prescriptions
        WHERE user_id = $1 AND deleted = false
        ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
       [member_id, parsedLimit, parsedOffset]
     );
 
-    // Step 3: Get total count
+    // Step 3: Attach images for each prescription
+    for (let prescription of prescriptions) {
+      const images = await connection.query(
+        `SELECT id as prescription_img_id, resiged, thumb FROM prescription_images
+         WHERE prescription_id = $1 AND deleted = false ORDER BY created_at ASC`,
+        [prescription.id]
+      );
+      prescription.images = images;
+    }
+
+    // Step 4: Total count
     const countResult = await connection.queryOne(
-      `SELECT COUNT(*) AS total FROM report
+      `SELECT COUNT(*) AS total FROM prescriptions
        WHERE user_id = $1 AND deleted = false`,
       [member_id]
     );
@@ -107,7 +118,6 @@ exports.getAllprscription = api(["member_id"],
     };
   })
 );
-
 
 
 exports.getCombainedDocs = api(["member_id"],
