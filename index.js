@@ -26,7 +26,7 @@ const {
 } = require("./controllers/user");
 const { addMember, editMember,getAllMember,deleteMember ,getUserInfo} = require("./controllers/member");
 const { createHealthMetric,editHealthMetric,deleteHealthMetric,getHealthMetric } = require("./controllers/healthMetric");
-const { getAllReports,getAllPrescription,getCombainedDocs,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl} = require("./controllers/doc");
+const { getAllReports,getAllPrescription,getCombainedDocs,editPrescriptionMeta,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl} = require("./controllers/doc");
 
 require("dotenv").config();
 
@@ -86,6 +86,7 @@ app.post(`${BASE_URL}/getHealthMetric`, getHealthMetric);
 app.post(`${BASE_URL}/getAllReports`, getAllReports);
 app.post(`${BASE_URL}/getAllPrescription`, getAllPrescription);
 app.post(`${BASE_URL}/getCombainedDocs`, getCombainedDocs);
+app.post(`${BASE_URL}/editPrescriptionMeta`, editPrescriptionMeta);
 app.post(`${BASE_URL}/editReportStatus`, editReportStatus);
 app.post(`${BASE_URL}/editprescriptionStatus`, editprescriptionStatus);
 app.post(`${BASE_URL}/deleteReports`, deleteReports);

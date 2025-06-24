@@ -120,85 +120,7 @@ exports.getAllPrescription = api(["member_id"],
 );
 
 
-// exports.getCombainedDocs = api(["member_id"],
-//   auth(async (req, connection, userInfo) => {
-//     const { member_id, limit = 20, offset = 0 } = req.body;
 
-//     // Validate pagination inputs
-//     const parsedLimit = parseInt(limit, 10);
-//     const parsedOffset = parseInt(offset, 10);
-
-//     if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
-//       throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
-//     }
-
-//     // Step 1: Validate member under MC
-//     const member = await connection.queryOne(
-//       `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2`,
-//       [member_id, userInfo.user_id]
-//     );
-
-//     if (!member) throw new errors.UNAUTHORIZED("You are not authorized to access this member’s documents.");
-
-//     // Step 2: Get prescriptions
-//     const prescriptions = await connection.query(
-//       `SELECT id, resized, thumbnail, shared, created_at
-//        FROM prescription
-//        WHERE user_id = $1 AND deleted = false
-//        ORDER BY created_at DESC
-//        LIMIT $2 OFFSET $3`,
-//       [member_id, parsedLimit, parsedOffset]
-//     );
-
-//     const prescriptionIds = prescriptions.map(p => p.id);
-
-//     if (prescriptionIds.length === 0) {
-//       return {
-//         flag: 200,
-//         data: [],
-//         total: 0,
-//         message: "No documents found."
-//       };
-//     }
-
-//     // Step 3: Get all reports under these prescriptions
-//     const reports = await connection.query(
-//       `SELECT id, resized, thumbnail, shared, prescription_id, created_at
-//        FROM report
-//        WHERE prescription_id = ANY($1::int[]) AND deleted = false`,
-//       [prescriptionIds]
-//     );
-
-//     // Step 4: Group reports under each prescription
-//     const reportMap = {};
-//     for (const report of reports) {
-//       if (!reportMap[report.prescription_id]) {
-//         reportMap[report.prescription_id] = [];
-//       }
-//       reportMap[report.prescription_id].push(report);
-//     }
-
-//     // Step 5: Attach reports to prescriptions
-//     const combined = prescriptions.map(p => ({
-//       ...p,
-//       reports: reportMap[p.id] || []
-//     }));
-
-//     // Step 6: Get total count of prescriptions
-//     const countResult = await connection.queryOne(
-//       `SELECT COUNT(*) AS total FROM prescription
-//        WHERE user_id = $1 AND deleted = false`,
-//       [member_id]
-//     );
-
-//     return {
-//       flag: 200,
-//       data: combined,
-//       total: parseInt(countResult.total, 10),
-//       message: "Combined documents fetched successfully."
-//     };
-//   })
-// );
 
 exports.getCombainedDocs = api(["member_id"],
   auth(async (req, connection, userInfo) => {
@@ -299,42 +221,74 @@ exports.getCombainedDocs = api(["member_id"],
 );
 
 
-// exports.editReportStatus = api(["member_id", "reports", "status"],
-//   auth(async (req, connection, userInfo) => {
-//     const { member_id, reports, status } = req.body;
 
-//     // Validation: status must be a boolean
-//     if (typeof status !== "boolean") {
-//       throw new errors.INVALID_FIELDS_PROVIDED("Status must be true or false.");
-//     }
+exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, prescription_id, shared, department, doctor_name, visited_date } = req.body;
 
-//     // Validation: reports must be a non-empty array of integers
-//     if (!Array.isArray(reports) || reports.length === 0 || !reports.every(id => Number.isInteger(id))) {
-//       throw new errors.INVALID_FIELDS_PROVIDED("Reports must be an array of report IDs (numbers).");
-//     }
+    if (!Number.isInteger(+member_id) || !Number.isInteger(+prescription_id)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("member_id and prescription_id must be integers.");
+    }
 
-//     // Step 1: Verify member is under current MC
-//     const member = await connection.queryOne(
-//       `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2`,
-//       [member_id, userInfo.user_id]
-//     );
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+    if (!member) throw new errors.UNAUTHORIZED("Not authorized to edit this prescription.");
 
-//     if (!member) throw new errors.UNAUTHORIZED("You are not authorized to access this member’s reports.");
+    const updates = [];
+    const values = [];
+    let idx = 1;
 
-//     // Step 2: Update shared status of valid reports for that user
-//    await connection.query(
-//       `UPDATE report
-//        SET shared = $1
-//        WHERE id = ANY($2::int[]) AND user_id = $3 AND deleted = false`,
-//       [status, reports, member_id]
-//     );
+    if (shared !== undefined) {
+      updates.push(`shared = $${idx++}`);
+      values.push(shared === 'true' || shared === true);
+    }
 
-//     return {
-//       flag: 200,
-//       message: `Report sharing status updated to ${status ? "shared" : "private"} for ${reports.length} report(s).`
-//     };
-//   })
-// );
+    if (department !== undefined) {
+      updates.push(`department = $${idx++}`);
+      values.push(department);
+    }
+
+    if (doctor_name !== undefined) {
+      updates.push(`doctor_name = $${idx++}`);
+      values.push(doctor_name);
+    }
+
+    if (visited_date !== undefined) {
+      const date = new Date(visited_date);
+      if (isNaN(date.getTime())) throw new errors.INVALID_FIELDS_PROVIDED("Invalid visited_date format.");
+      updates.push(`visited_date = $${idx++}`);
+      values.push(visited_date);
+    }
+
+    if (updates.length === 0) throw new errors.INVALID_FIELDS_PROVIDED("No valid fields to update.");
+
+    values.push(prescription_id, member_id);
+
+    const query = `
+      UPDATE prescriptions SET ${updates.join(', ')}
+      WHERE id = $${idx++} AND user_id = $${idx} AND deleted = false
+      RETURNING id
+    `;
+
+    const result = await connection.queryOne(query, values);
+
+    if (!result.id) throw new errors.NOT_FOUND("Prescription not found or already deleted.");
+
+    return {
+      flag: 200,
+      message: "Prescription info updated successfully."
+    };
+  })
+);
+
+
+
+
+
+
+
 
 exports.editReportStatus = api(["member_id", "reports", "status"],
   auth(async (req, connection, userInfo) => {
