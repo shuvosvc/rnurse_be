@@ -539,6 +539,44 @@ exports.deletePrescriptions = api(["member_id", "prescriptions"],
   })
 );
 
+exports.deletePrescriptionImages = api(["member_id", "prescription_img_ids"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, prescription_img_ids } = req.body;
+
+    if (!Array.isArray(prescription_img_ids) || prescription_img_ids.length === 0 || !prescription_img_ids.every(id => Number.isInteger(id))) {
+      throw new errors.INVALID_FIELDS_PROVIDED("prescription_img_ids must be an array of image IDs (numbers).");
+    }
+
+    // Authorization check
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+    if (!member) {
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s prescription images.");
+    }
+
+    const result = await connection.query(
+      `UPDATE prescription_images pi
+       SET deleted = true
+       WHERE id = ANY($1::int[]) AND EXISTS (
+         SELECT 1 FROM prescriptions p
+         WHERE p.id = pi.prescription_id AND p.user_id = $2 AND p.deleted = false
+       ) and pi.deleted = false
+       RETURNING id`,
+      [prescription_img_ids, member_id]
+    );
+
+    const deletedCount = result.length;
+    const notFoundCount = prescription_img_ids.length - deletedCount;
+
+    return {
+      flag: 200,
+      message: `Deleted ${deletedCount} prescription image(s).`,
+      not_found: notFoundCount > 0 ? `${notFoundCount} image(s) not found or unauthorized.` : 0
+    };
+  })
+);
 
 
 
