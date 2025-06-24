@@ -7,7 +7,7 @@ cron.schedule('0 18 * * *', async () => {
     connection = await database.getConnection();
     await connection.beginTransaction();
 
-    const result = await connection.query('SELECT cleanup_expired_tokens();');
+    await connection.query('SELECT cleanup_expired_tokens();');
 
     await connection.commit();
     await connection.release();
