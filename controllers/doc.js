@@ -221,10 +221,17 @@ exports.getCombainedDocs = api(["member_id"],
 );
 
 
-
 exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
   auth(async (req, connection, userInfo) => {
-    const { member_id, prescription_id, shared, department, doctor_name, visited_date } = req.body;
+    const {
+      member_id,
+      prescription_id,
+      shared,
+      department,
+      doctor_name,
+      visited_date,
+      title
+    } = req.body;
 
     if (!Number.isInteger(+member_id) || !Number.isInteger(+prescription_id)) {
       throw new errors.INVALID_FIELDS_PROVIDED("member_id and prescription_id must be integers.");
@@ -257,12 +264,24 @@ exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
 
     if (visited_date !== undefined) {
       const date = new Date(visited_date);
-      if (isNaN(date.getTime())) throw new errors.INVALID_FIELDS_PROVIDED("Invalid visited_date format.");
+      if (isNaN(date.getTime())) {
+        throw new errors.INVALID_FIELDS_PROVIDED("Invalid visited_date format.");
+      }
       updates.push(`visited_date = $${idx++}`);
       values.push(visited_date);
     }
 
-    if (updates.length === 0) throw new errors.INVALID_FIELDS_PROVIDED("No valid fields to update.");
+    if (title !== undefined) {
+      if (typeof title !== 'string' || title.trim().length === 0) {
+        throw new errors.INVALID_FIELDS_PROVIDED("Invalid title.");
+      }
+      updates.push(`title = $${idx++}`);
+      values.push(title);
+    }
+
+    if (updates.length === 0) {
+      throw new errors.INVALID_FIELDS_PROVIDED("No valid fields to update.");
+    }
 
     values.push(prescription_id, member_id);
 
@@ -274,7 +293,9 @@ exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
 
     const result = await connection.queryOne(query, values);
 
-    if (!result.id) throw new errors.NOT_FOUND("Prescription not found or already deleted.");
+    if (!result?.id) {
+      throw new errors.NOT_FOUND("Prescription not found or already deleted.");
+    }
 
     return {
       flag: 200,
