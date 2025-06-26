@@ -284,10 +284,17 @@ exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
 );
 
 
-
 exports.editReportMeta = api(["member_id", "report_id"],
   auth(async (req, connection, userInfo) => {
-    const { member_id, report_id, prescription_id, shared, test_name, delivery_date } = req.body;
+    const {
+      member_id,
+      report_id,
+      prescription_id,
+      shared,
+      test_name,
+      delivery_date,
+      title
+    } = req.body;
 
     if (!Number.isInteger(+member_id) || !Number.isInteger(+report_id)) {
       throw new errors.INVALID_FIELDS_PROVIDED("member_id and report_id must be integers.");
@@ -304,10 +311,9 @@ exports.editReportMeta = api(["member_id", "report_id"],
     let idx = 1;
 
     if (prescription_id !== undefined) {
-
-
-
-      if (!Number.isInteger(+prescription_id)) throw new errors.INVALID_FIELDS_PROVIDED("Invalid prescription_id.");
+      if (!Number.isInteger(+prescription_id)) {
+        throw new errors.INVALID_FIELDS_PROVIDED("Invalid prescription_id.");
+      }
 
       const prescription = await connection.queryOne(
         `SELECT user_id FROM prescriptions WHERE id = $1 AND deleted = false`,
@@ -315,20 +321,16 @@ exports.editReportMeta = api(["member_id", "report_id"],
       );
 
       if (!prescription) {
-        throw new errors.NOT_FOUND('Prescription not found.');
+        throw new errors.NOT_FOUND("Prescription not found.");
       }
 
       if (prescription.user_id !== +member_id) {
-        throw new errors.UNAUTHORIZED('Unauthorized. Prescription does not belong to this member.');
+        throw new errors.UNAUTHORIZED("Unauthorized. Prescription does not belong to this member.");
       }
-
 
       updates.push(`prescription_id = $${idx++}`);
       values.push(prescription_id);
     }
-
-
-
 
     if (shared !== undefined) {
       updates.push(`shared = $${idx++}`);
@@ -342,12 +344,24 @@ exports.editReportMeta = api(["member_id", "report_id"],
 
     if (delivery_date !== undefined) {
       const date = new Date(delivery_date);
-      if (isNaN(date.getTime())) throw new errors.INVALID_FIELDS_PROVIDED("Invalid delivery_date format.");
+      if (isNaN(date.getTime())) {
+        throw new errors.INVALID_FIELDS_PROVIDED("Invalid delivery_date format.");
+      }
       updates.push(`delivery_date = $${idx++}`);
       values.push(delivery_date);
     }
 
-    if (updates.length === 0) throw new errors.INVALID_FIELDS_PROVIDED("No valid fields to update.");
+    if (title !== undefined) {
+      if (typeof title !== 'string' || title.trim().length === 0) {
+        throw new errors.INVALID_FIELDS_PROVIDED("Invalid title.");
+      }
+      updates.push(`title = $${idx++}`);
+      values.push(title);
+    }
+
+    if (updates.length === 0) {
+      throw new errors.INVALID_FIELDS_PROVIDED("No valid fields to update.");
+    }
 
     values.push(report_id, member_id);
 
@@ -359,7 +373,9 @@ exports.editReportMeta = api(["member_id", "report_id"],
 
     const result = await connection.queryOne(query, values);
 
-    if (!result) throw new errors.NOT_FOUND("Report not found or already deleted.");
+    if (!result) {
+      throw new errors.NOT_FOUND("Report not found or already deleted.");
+    }
 
     return {
       flag: 200,
@@ -367,6 +383,7 @@ exports.editReportMeta = api(["member_id", "report_id"],
     };
   })
 );
+
 
 
 
