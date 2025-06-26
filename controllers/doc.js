@@ -1,4 +1,4 @@
-const { api, auth,generateAlphaNumericToken,formatDateTime } = require("../helpers/common");
+const { api, auth, generateAlphaNumericToken, formatDateTime } = require("../helpers/common");
 const errors = require("../helpers/errors");
 
 
@@ -285,6 +285,88 @@ exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
 
 
 
+exports.editReportMeta = api(["member_id", "report_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, report_id, prescription_id, shared, test_name, delivery_date } = req.body;
+
+    if (!Number.isInteger(+member_id) || !Number.isInteger(+report_id)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("member_id and report_id must be integers.");
+    }
+
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+    if (!member) throw new errors.UNAUTHORIZED("Not authorized to edit this report.");
+
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    if (prescription_id !== undefined) {
+
+
+
+      if (!Number.isInteger(+prescription_id)) throw new errors.INVALID_FIELDS_PROVIDED("Invalid prescription_id.");
+
+      const prescription = await connection.queryOne(
+        `SELECT user_id FROM prescriptions WHERE id = $1 AND deleted = false`,
+        [prescription_id]
+      );
+
+      if (!prescription) {
+        throw new errors.NOT_FOUND('Prescription not found.');
+      }
+
+      if (prescription.user_id !== +member_id) {
+        throw new errors.UNAUTHORIZED('Unauthorized. Prescription does not belong to this member.');
+      }
+
+
+      updates.push(`prescription_id = $${idx++}`);
+      values.push(prescription_id);
+    }
+
+
+
+
+    if (shared !== undefined) {
+      updates.push(`shared = $${idx++}`);
+      values.push(shared === 'true' || shared === true);
+    }
+
+    if (test_name !== undefined) {
+      updates.push(`test_name = $${idx++}`);
+      values.push(test_name);
+    }
+
+    if (delivery_date !== undefined) {
+      const date = new Date(delivery_date);
+      if (isNaN(date.getTime())) throw new errors.INVALID_FIELDS_PROVIDED("Invalid delivery_date format.");
+      updates.push(`delivery_date = $${idx++}`);
+      values.push(delivery_date);
+    }
+
+    if (updates.length === 0) throw new errors.INVALID_FIELDS_PROVIDED("No valid fields to update.");
+
+    values.push(report_id, member_id);
+
+    const query = `
+      UPDATE reports SET ${updates.join(', ')}
+      WHERE id = $${idx++} AND user_id = $${idx} AND deleted = false
+      RETURNING id
+    `;
+
+    const result = await connection.queryOne(query, values);
+
+    if (!result) throw new errors.NOT_FOUND("Report not found or already deleted.");
+
+    return {
+      flag: 200,
+      message: "Report info updated successfully."
+    };
+  })
+);
 
 
 
@@ -561,7 +643,7 @@ exports.generateTempUrl = api(["member_id", "expires_in"],
     }
 
     const token = generateAlphaNumericToken(10);
-const expiresAt = new Date(Date.now() + parseInt(expires_in) * 1000);
+    const expiresAt = new Date(Date.now() + parseInt(expires_in) * 1000);
     await connection.query(
       `INSERT INTO token (user_id, token, expires_at)
        VALUES ($1, $2, $3)`,
@@ -572,7 +654,7 @@ const expiresAt = new Date(Date.now() + parseInt(expires_in) * 1000);
       flag: 200,
       message: "Temporary token generated successfully.",
 
-        token
+      token
 
     };
   })
