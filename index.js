@@ -25,7 +25,16 @@ const {
   editUser,
 } = require("./controllers/user");
 const { addMember, editMember,getAllMember,deleteMember ,getUserInfo} = require("./controllers/member");
-const { createHealthMetric,editHealthMetric,deleteHealthMetric,getHealthMetric } = require("./controllers/healthMetric");
+const { createHealthMetric,editHealthMetric,deleteHealthMetric,getHealthMetric ,
+createWeightMetric,
+deleteWeightMetric,
+createBPMetric,
+deleteBPMetric,
+createSugarMetric,
+deleteSugarMetric,
+createO2Metric,
+deleteO2Metric
+} = require("./controllers/healthMetric");
 const { getAllReports,getSingleReport,getAllPrescription,getSinglePrescription,getCombainedDocs,getSingleCombinedData,editPrescriptionMeta,editReportMeta,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl} = require("./controllers/doc");
 
 require("dotenv").config();
@@ -82,6 +91,14 @@ app.post(`${BASE_URL}/createHealthMetric`, createHealthMetric);
 app.post(`${BASE_URL}/editHealthMetric`, editHealthMetric);
 app.post(`${BASE_URL}/deleteHealthMetric`, deleteHealthMetric);
 app.post(`${BASE_URL}/getHealthMetric`, getHealthMetric);
+app.post(`${BASE_URL}/createWeightMetric`, createWeightMetric);
+app.post(`${BASE_URL}/deleteWeightMetric`, deleteWeightMetric);
+app.post(`${BASE_URL}/createBPMetric`, createBPMetric);
+app.post(`${BASE_URL}/deleteBPMetric`, deleteBPMetric);
+app.post(`${BASE_URL}/createSugarMetric`, createSugarMetric);
+app.post(`${BASE_URL}/deleteSugarMetric`, deleteSugarMetric);
+app.post(`${BASE_URL}/createO2Metric`, createO2Metric);
+app.post(`${BASE_URL}/deleteO2Metric`, deleteO2Metric);
 
 app.post(`${BASE_URL}/getAllReports`, getAllReports);
 app.post(`${BASE_URL}/getSingleReport`, getSingleReport);
