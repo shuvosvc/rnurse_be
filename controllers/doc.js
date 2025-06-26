@@ -28,7 +28,7 @@ exports.getAllReports = api(["member_id"],
 
     // Step 2: Fetch paginated reports
     const reports = await connection.query(
-      `SELECT id, prescription_id, shared, test_name, delivery_date, created_at
+      `SELECT id, prescription_id, shared,title, test_name, delivery_date, created_at
        FROM reports
        WHERE user_id = $1 AND deleted = false
        ORDER BY created_at DESC
@@ -61,6 +61,56 @@ exports.getAllReports = api(["member_id"],
 );
 
 
+exports.getSingleReport = api(["member_id", "report_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, report_id } = req.body;
+
+    if (!Number.isInteger(+member_id) || !Number.isInteger(+report_id)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("member_id and report_id must be integers.");
+    }
+
+    // Step 1: Authorization
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s reports.");
+    }
+
+    // Step 2: Fetch report
+    const report = await connection.queryOne(
+      `SELECT id, prescription_id, shared, test_name, delivery_date, title, created_at
+       FROM reports
+       WHERE id = $1 AND user_id = $2 AND deleted = false`,
+      [report_id, member_id]
+    );
+
+    if (!report) {
+      throw new errors.NOT_FOUND("Report not found or already deleted.");
+    }
+
+    // Step 3: Fetch associated images
+    const images = await connection.query(
+      `SELECT id as report_img_id, resiged, thumb
+       FROM report_images
+       WHERE report_id = $1 AND deleted = false
+       ORDER BY created_at ASC`,
+      [report_id]
+    );
+
+    report.images = images;
+
+    return {
+      flag: 200,
+      report,
+      message: "Report fetched successfully."
+    };
+  })
+);
+
+
 
 exports.getAllPrescription = api(["member_id"],
   auth(async (req, connection, userInfo) => {
@@ -85,7 +135,7 @@ exports.getAllPrescription = api(["member_id"],
 
     // Step 2: Fetch paginated prescriptions
     const prescriptions = await connection.query(
-      `SELECT id, shared, department, doctor_name, visited_date, created_at
+      `SELECT id, shared,title, department, doctor_name, visited_date, created_at
        FROM prescriptions
        WHERE user_id = $1 AND deleted = false
        ORDER BY created_at DESC
@@ -119,6 +169,54 @@ exports.getAllPrescription = api(["member_id"],
   })
 );
 
+exports.getSinglePrescription = api(["member_id", "prescription_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, prescription_id } = req.body;
+
+    if (!Number.isInteger(+member_id) || !Number.isInteger(+prescription_id)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("member_id and prescription_id must be integers.");
+    }
+
+    // Step 1: Authorization check
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s prescriptions.");
+    }
+
+    // Step 2: Fetch prescription metadata
+    const prescription = await connection.queryOne(
+      `SELECT id, shared, title, department, doctor_name, visited_date, created_at
+       FROM prescriptions
+       WHERE id = $1 AND user_id = $2 AND deleted = false`,
+      [prescription_id, member_id]
+    );
+
+    if (!prescription) {
+      throw new errors.NOT_FOUND("Prescription not found or already deleted.");
+    }
+
+    // Step 3: Attach images
+    const images = await connection.query(
+      `SELECT id as prescription_img_id, resiged, thumb
+       FROM prescription_images
+       WHERE prescription_id = $1 AND deleted = false
+       ORDER BY created_at ASC`,
+      [prescription_id]
+    );
+
+    prescription.images = images;
+
+    return {
+      flag: 200,
+      prescription,
+      message: "Prescription fetched successfully."
+    };
+  })
+);
 
 
 
@@ -143,7 +241,7 @@ exports.getCombainedDocs = api(["member_id"],
 
     // Step 2: Get paginated prescriptions
     const prescriptions = await connection.query(
-      `SELECT id, shared, department, doctor_name, visited_date, created_at
+      `SELECT id, shared,title, department, doctor_name, visited_date, created_at
        FROM prescriptions
        WHERE user_id = $1 AND deleted = false
        ORDER BY created_at DESC
@@ -173,7 +271,7 @@ exports.getCombainedDocs = api(["member_id"],
     // Step 4: Get all reports for these prescriptions
     const prescriptionIds = prescriptions.map(p => p.id);
     const reports = await connection.query(
-      `SELECT id, shared, test_name, delivery_date, prescription_id, created_at
+      `SELECT id, shared,title, test_name, delivery_date, prescription_id, created_at
        FROM reports
        WHERE prescription_id = ANY($1::int[]) AND deleted = false`,
       [prescriptionIds]
@@ -216,6 +314,75 @@ exports.getCombainedDocs = api(["member_id"],
       prescriptions: combined,
       total: parseInt(countResult.total, 10),
       message: "Combined documents fetched successfully."
+    };
+  })
+);
+exports.getSingleCombinedData = api(["member_id", "prescription_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, prescription_id } = req.body;
+
+    if (!Number.isInteger(+member_id) || !Number.isInteger(+prescription_id)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("member_id and prescription_id must be integers.");
+    }
+
+    // Step 1: Verify MC ownership
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+    if (!member) {
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s documents.");
+    }
+
+    // Step 2: Fetch the prescription
+    const prescription = await connection.queryOne(
+      `SELECT id, shared, title, department, doctor_name, visited_date, created_at
+       FROM prescriptions
+       WHERE id = $1 AND user_id = $2 AND deleted = false`,
+      [prescription_id, member_id]
+    );
+    if (!prescription) {
+      throw new errors.NOT_FOUND("Prescription not found or already deleted.");
+    }
+
+    // Step 3: Fetch prescription images
+    const prescriptionImages = await connection.query(
+      `SELECT id AS prescription_img_id, resiged, thumb
+       FROM prescription_images
+       WHERE prescription_id = $1 AND deleted = false
+       ORDER BY created_at ASC`,
+      [prescription_id]
+    );
+
+    // Step 4: Fetch all reports under this prescription
+    const reports = await connection.query(
+      `SELECT id, shared, title, test_name, delivery_date, created_at
+       FROM reports
+       WHERE prescription_id = $1 AND deleted = false
+       ORDER BY created_at DESC`,
+      [prescription_id]
+    );
+
+    // Step 5: Attach images to each report
+    for (let report of reports) {
+      const images = await connection.query(
+        `SELECT id AS report_img_id, resiged, thumb
+         FROM report_images
+         WHERE report_id = $1 AND deleted = false
+         ORDER BY created_at ASC`,
+        [report.id]
+      );
+      report.images = images;
+    }
+
+    // Step 6: Combine data and return
+    prescription.images = prescriptionImages;
+    prescription.reports = reports;
+
+    return {
+      flag: 200,
+      prescription,
+      message: "Combined prescription and reports data fetched successfully."
     };
   })
 );
