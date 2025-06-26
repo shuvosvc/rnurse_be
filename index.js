@@ -25,7 +25,9 @@ const {
   editUser,
 } = require("./controllers/user");
 const { addMember, editMember,getAllMember,deleteMember ,getUserInfo} = require("./controllers/member");
-const {getHealthMetrics ,
+const {
+getHealthOverview,
+getHealthMetrics ,
 createWeightMetric,
 deleteWeightMetric,
 createBPMetric,
@@ -87,7 +89,7 @@ app.post(`${BASE_URL}/editMember`, editMember);
 app.post(`${BASE_URL}/getAllMember`, getAllMember);
 app.post(`${BASE_URL}/deleteMember`, deleteMember);
 
-
+app.post(`${BASE_URL}/getHealthOverview`, getHealthOverview);
 app.post(`${BASE_URL}/getHealthMetrics`, getHealthMetrics);
 app.post(`${BASE_URL}/createWeightMetric`, createWeightMetric);
 app.post(`${BASE_URL}/deleteWeightMetric`, deleteWeightMetric);

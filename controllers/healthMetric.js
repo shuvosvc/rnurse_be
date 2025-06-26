@@ -1,7 +1,6 @@
 const { api, auth } = require("../helpers/common");
 const errors = require("../helpers/errors");
 
-const { validateCreateHealthMetric } = require("../validator/healthMetric");
 
 
 
@@ -12,8 +11,51 @@ const { validateCreateHealthMetric } = require("../validator/healthMetric");
 
 
 
+exports.getHealthOverview = api(["member_id"], auth(async (req, connection, userInfo) => {
+  const { member_id } = req.body;
 
+  if (!Number.isInteger(+member_id)) {
+    throw new errors.INVALID_FIELDS_PROVIDED("Invalid member_id.");
+  }
 
+  const isExist = await connection.queryOne(
+    'SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false',
+    [member_id, userInfo.user_id]
+  );
+  if (!isExist) throw new errors.UNAUTHORIZED();
+
+  // Fetch latest record from each table
+  const [latestWeight] = await connection.query(
+    `SELECT id, weight, created_at FROM weights WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [member_id]
+  );
+
+  const [latestBP] = await connection.query(
+    `SELECT id, systolic, diastolic, created_at FROM blood_pressures WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [member_id]
+  );
+
+  const [latestSugar] = await connection.query(
+    `SELECT id, sugar_level, created_at FROM sugar_levels WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [member_id]
+  );
+
+  const [latestO2] = await connection.query(
+    `SELECT id, o2_level, created_at FROM oxygen_levels WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [member_id]
+  );
+
+  return {
+    flag: 200,
+    overview: {
+      weight: latestWeight || null,
+      blood_pressure: latestBP || null,
+      sugar_level: latestSugar || null,
+      o2_level: latestO2 || null
+    },
+    message: "Health overview fetched successfully."
+  };
+}));
 
 
 
@@ -210,9 +252,15 @@ exports.deleteO2Metric = api(["metric_id", "member_id"],
   })
 );
 
-
 exports.getHealthMetrics = api(["member_id"], auth(async (req, connection, userInfo) => {
-  const { member_id, limit = 20, offset = 0, from, to } = req.body;
+  const {
+    member_id,
+    type = 'all',
+    limit = 20,
+    offset = 0,
+    from,
+    to
+  } = req.body;
 
   const parsedLimit = parseInt(limit, 10);
   const parsedOffset = parseInt(offset, 10);
@@ -229,47 +277,71 @@ exports.getHealthMetrics = api(["member_id"], auth(async (req, connection, userI
   );
   if (!isExist) throw new errors.UNAUTHORIZED();
 
-  const dateFilter = (table) => {
-    let condition = `user_id = $1`;
+  const buildQuery = (table) => {
+    let where = `user_id = $1 `;
     const values = [member_id];
     let idx = 2;
 
     if (fromDate) {
-      condition += ` AND created_at >= $${idx++}`;
-      values.push(fromDate.toISOString().split('T')[0]);
+      where += ` AND created_at >= $${idx++}`;
+      values.push(fromDate.toISOString().split("T")[0]);
     }
 
     if (toDate) {
-      condition += ` AND created_at <= $${idx++}`;
-      values.push(toDate.toISOString().split('T')[0]);
+      where += ` AND created_at <= $${idx++}`;
+      values.push(toDate.toISOString().split("T")[0]);
     }
 
-    condition += ` ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx}`;
+    const countQuery = `SELECT COUNT(*) AS total FROM ${table} WHERE ${where}`;
+    const dataQuery = `
+      SELECT * FROM ${table}
+      WHERE ${where}
+      ORDER BY created_at DESC
+      LIMIT $${idx++} OFFSET $${idx}
+    `;
     values.push(parsedLimit, parsedOffset);
-    return { condition, values };
+
+    return { countQuery, dataQuery, values };
   };
 
-  const metricQuery = async (table, fields) => {
-    const { condition, values } = dateFilter(table);
-    const result = await connection.query(
-      `SELECT id, ${fields.join(', ')}, created_at FROM ${table} WHERE ${condition}`, values
-    );
-    return result;
-  };
+  const results = {};
 
-  const weights = await metricQuery("weights", ["weight"]);
-  const bloodPressures = await metricQuery("blood_pressures", ["systolic", "diastolic"]);
-  const sugarLevels = await metricQuery("sugar_levels", ["sugar_level"]);
-  const oxygenLevels = await metricQuery("oxygen_levels", ["o2_level"]);
+  if (type === 'weight' || type === 'all') {
+    const { countQuery, dataQuery, values } = buildQuery('weights');
+    const data = await connection.query(dataQuery, values);
+    const count = await connection.queryOne(countQuery, values.slice(0, -2));
+    results.weights = data;
+    results.weightsCount = parseInt(count.total, 10);
+  }
+
+  if (type === 'bp' || type === 'all') {
+    const { countQuery, dataQuery, values } = buildQuery('blood_pressures');
+    const data = await connection.query(dataQuery, values);
+    const count = await connection.queryOne(countQuery, values.slice(0, -2));
+    results.bloodPressures = data;
+    results.bpCount = parseInt(count.total, 10);
+  }
+
+  if (type === 'sugar' || type === 'all') {
+    const { countQuery, dataQuery, values } = buildQuery('sugar_levels');
+    const data = await connection.query(dataQuery, values);
+    const count = await connection.queryOne(countQuery, values.slice(0, -2));
+    results.sugarLevels = data;
+    results.sugarCount = parseInt(count.total, 10);
+  }
+
+  if (type === 'o2' || type === 'all') {
+    const { countQuery, dataQuery, values } = buildQuery('oxygen_levels');
+    const data = await connection.query(dataQuery, values);
+    const count = await connection.queryOne(countQuery, values.slice(0, -2));
+    results.oxygenLevels = data;
+    results.o2Count = parseInt(count.total, 10);
+  }
 
   return {
     flag: 200,
-    metrics: {
-      weights,
-      bloodPressures,
-      sugarLevels,
-      oxygenLevels
-    },
+    metrics: results,
     message: "Health metrics fetched successfully."
   };
 }));
+
