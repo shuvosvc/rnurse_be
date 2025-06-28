@@ -63,7 +63,7 @@ exports.gauth = api(["gauthToken"], async (req, connection) => {
         pinned: isExist.pinned,
       },
       jwtSecret,
-      { expiresIn: "1h" }
+      { expiresIn: "1d" }
     );
 
     // Generate a refresh token
@@ -105,7 +105,7 @@ exports.gauth = api(["gauthToken"], async (req, connection) => {
         pinned:newUser.pinned
       },
       jwtSecret,
-      { expiresIn: "1h" }
+      { expiresIn: "1d" }
     );
 
     const refreshToken = jwt.sign(
@@ -163,7 +163,7 @@ await validateAuth(req);
         
       },
       jwtSecret,
-      { expiresIn: "1h" }
+      { expiresIn: "1d" }
     );
 
         // Generate a refresh token
@@ -221,7 +221,7 @@ exports.token = api(["refreshToken"], async(req, connection) => {
       
     },
     jwtSecret,
-    { expiresIn: "1h" }
+    { expiresIn: "1d" }
   );
 
   return { flag: 200, accessToken:newAccessToken }
