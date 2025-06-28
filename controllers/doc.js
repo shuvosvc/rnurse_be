@@ -172,15 +172,9 @@ exports.getAllPrescription = api(["member_id"],
 
 exports.getPescriptionData = api(["member_id"],
   auth(async (req, connection, userInfo) => {
-    const { member_id, limit = 20, offset = 0 } = req.body;
+    const { member_id } = req.body;
 
-    const parsedLimit = parseInt(limit, 10);
-    const parsedOffset = parseInt(offset, 10);
-
-    if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
-      throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
-    }
-
+    
     // Step 1: Authorization check
     const member = await connection.queryOne(
       `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
@@ -196,9 +190,8 @@ exports.getPescriptionData = api(["member_id"],
       `SELECT id, shared,title, department
        FROM prescriptions
        WHERE user_id = $1 AND deleted = false
-       ORDER BY created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [member_id, parsedLimit, parsedOffset]
+       ORDER BY created_at DESC `,
+      [member_id]
     );
 
     // Step 3: Attach images for each prescription
@@ -211,17 +204,11 @@ exports.getPescriptionData = api(["member_id"],
       prescription.images = images;
     }
 
-    // Step 4: Total count
-    const countResult = await connection.queryOne(
-      `SELECT COUNT(*) AS total FROM prescriptions
-       WHERE user_id = $1 AND deleted = false`,
-      [member_id]
-    );
+ 
 
     return {
       flag: 200,
       prescriptions,
-      total: parseInt(countResult.total, 10),
       message: "Prescriptions fetched successfully."
     };
   })
