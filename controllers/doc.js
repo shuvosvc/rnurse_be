@@ -883,7 +883,241 @@ exports.deletePrescriptionImages = api(["member_id", "prescription_img_ids"],
 
 
 
+exports.getMedInfo = api(
+  async (req, connection, userInfo) => {
 
+
+const medicalReports = [
+  {
+    category: "Laboratory Test Reports",
+    reports: [
+      "Complete Blood Count (CBC) Report",
+      "Blood Sugar Report (Fasting/PP/HbA1c)",
+      "Lipid Profile Report",
+      "Liver Function Test (LFT) Report",
+      "Kidney Function Test (KFT) Report",
+      "Thyroid Function Test (T3, T4, TSH)",
+      "Urine Analysis Report",
+      "Stool Test Report",
+      "Coagulation Profile (PT, aPTT, INR)",
+      "Electrolyte Panel Report (Sodium, Potassium)",
+      "Hormone Panel Report (FSH, LH, Estrogen, Testosterone)",
+      "Vitamin & Mineral Report (Vitamin D, B12, Calcium)",
+      "CRP, ESR, D-dimer Report",
+      "ANA/RA/Autoimmune Panel",
+      "Tumor Marker Reports (CA-125, PSA, CEA, etc.)"
+    ]
+  },
+  {
+    category: "Radiology & Imaging Reports",
+    reports: [
+      "X-ray Report",
+      "CT Scan Report",
+      "MRI Report",
+      "Ultrasound (Abdominal, Pelvic, Doppler)",
+      "Mammography Report",
+      "PET Scan Report",
+      "DEXA/Bone Density Report",
+      "Barium Meal Report",
+      "IVP (Intravenous Pyelogram) Report",
+      "Contrast Imaging Report"
+    ]
+  },
+  {
+    category: "Cardiology Reports",
+    reports: [
+      "ECG (Electrocardiogram)",
+      "ECHO (Echocardiogram)",
+      "TMT (Treadmill Stress Test)",
+      "Holter Monitoring Report",
+      "Cardiac Enzyme Panel",
+      "Angiogram/Angiography",
+      "Cardiac Catheterization Report",
+      "Electrophysiology Study Report"
+    ]
+  },
+  {
+    category: "Clinical & Hospital Reports",
+    reports: [
+      "Patient Registration/Admission Form",
+      "Medical History Report",
+      "Clinical Examination Report",
+      "Inpatient Case Sheet",
+      "Progress Notes",
+      "Doctor’s Daily Rounds Notes",
+      "Discharge Summary",
+      "Referral Letter",
+      "Follow-up Report"
+    ]
+  },
+  {
+    category: "Surgical & Procedure Reports",
+    reports: [
+      "Surgery/Operation Report",
+      "Preoperative Evaluation Report",
+      "Anesthesia Record",
+      "Post-Operative Care Report",
+      "Endoscopy Report",
+      "Colonoscopy Report",
+      "Cystoscopy Report",
+      "Biopsy Report",
+      "Histopathology Report",
+      "Laparoscopy Report"
+    ]
+  },
+  {
+    category: "Mental Health & Neurology Reports",
+    reports: [
+      "Psychiatric Evaluation",
+      "Mental Status Examination",
+      "Cognitive Function Report",
+      "EEG Report (Electroencephalogram)",
+      "Sleep Study (Polysomnography)",
+      "Neuropsychological Assessment Report",
+      "Memory and Dementia Report"
+    ]
+  },
+  {
+    category: "Pediatric & Geriatric Reports",
+    reports: [
+      "Pediatric Growth Chart",
+      "Immunization Record",
+      "Child Developmental Assessment",
+      "Geriatric Health Assessment",
+      "Frailty Assessment Report"
+    ]
+  },
+  {
+    category: "Obstetrics & Gynecology Reports",
+    reports: [
+      "Antenatal Checkup Report",
+      "Pregnancy Ultrasound Report",
+      "Fetal Anomaly Scan",
+      "Delivery/Birth Summary",
+      "Postnatal Checkup Report",
+      "Pap Smear & HPV Report",
+      "Menstrual Health Report",
+      "IVF Procedure Report"
+    ]
+  },
+  {
+    category: "Dental Reports",
+    reports: [
+      "Dental Examination Report",
+      "Dental X-ray (OPG)",
+      "Root Canal Treatment Report",
+      "Orthodontic Evaluation",
+      "Oral Surgery Report"
+    ]
+  },
+  {
+    category: "Specialized/Advanced Reports",
+    reports: [
+      "Genetic Testing Report",
+      "Karyotyping Report",
+      "Whole Exome/Genome Sequencing Report",
+      "HLA Typing Report",
+      "Immunohistochemistry Report"
+    ]
+  },
+  {
+    category: "Legal, Insurance & Certification",
+    reports: [
+      "Medical Certificate (Fitness/Unfit)",
+      "Sick Leave Certificate",
+      "Disability Certificate",
+      "Death Certificate",
+      "Vaccination Certificate",
+      "Medico-Legal Case (MLC) Report",
+      "Health Insurance Pre/Post Authorization Report",
+      "Second Opinion Report",
+      "Consent Form"
+    ]
+  }
+];
+
+
+
+ const medicalDepartments = [
+  {
+    category: "Internal Medicine & Related Specialties",
+    departments: [
+      "Cardiology – Heart and blood vessels",
+      "Endocrinology – Hormones and glands (e.g. diabetes, thyroid)",
+      "Gastroenterology – Digestive system (stomach, liver, intestines)",
+      "Nephrology – Kidneys",
+      "Pulmonology – Lungs and respiratory system",
+      "Rheumatology – Joints, autoimmune diseases",
+      "Hematology – Blood disorders",
+      "Infectious Diseases – Bacterial, viral, fungal infections",
+      "Geriatrics – Health care for elderly people"
+    ]
+  },
+  {
+    category: "Neurological & Mental Health",
+    departments: [
+      "Neurology – Brain, spinal cord, and nerves",
+      "Psychiatry – Mental health and behavioral disorders",
+      "Neurosurgery – Surgery on the brain, spine, and nerves"
+    ]
+  },
+  {
+    category: "General & Surgical Departments",
+    departments: [
+      "General Medicine – Overall adult health care",
+      "General Surgery – Broad surgical procedures (abdomen, soft tissues)",
+      "Orthopedics – Bones, joints, and muscles",
+      "Urology – Urinary tract and male reproductive system",
+      "Otolaryngology (ENT) – Ear, nose, and throat",
+      "Ophthalmology – Eyes and vision",
+      "Plastic Surgery – Reconstructive or cosmetic surgery",
+      "Colorectal Surgery – Colon, rectum, and anus",
+      "Thoracic Surgery – Lungs and chest cavity",
+      "Vascular Surgery – Arteries and veins"
+    ]
+  },
+  {
+    category: "Women & Children",
+    departments: [
+      "Obstetrics & Gynecology (OB-GYN) – Pregnancy, childbirth, and female reproductive system",
+      "Pediatrics – Health care for children",
+      "Neonatology – Newborn care (usually in NICU)"
+    ]
+  },
+  {
+    category: "Cancer & Specialized Care",
+    departments: [
+      "Oncology – Cancer treatment",
+      "Radiation Oncology – Cancer treatment using radiation",
+      "Pathology – Disease diagnosis through lab tests and tissue analysis",
+      "Radiology – Imaging like X-rays, CT scans, MRIs",
+      "Nuclear Medicine – Imaging and treatment using radioactive substances",
+      "Genetics – Inherited disorders and genetic counseling"
+    ]
+  },
+  {
+    category: "Other Specialized Areas",
+    departments: [
+      "Dermatology – Skin, hair, nails",
+      "Dentistry / Oral Surgery – Teeth, gums, mouth",
+      "Anesthesiology – Pain control and sedation during surgery",
+      "Allergy & Immunology – Allergies and immune system disorders",
+      "Emergency Medicine – Urgent and emergency care",
+      "Critical Care (ICU) – Intensive life support for seriously ill patients",
+      "Rehabilitation Medicine (Physiatry) – Physical rehab after injury or illness",
+      "Palliative Care – Relief for serious or terminal illness"
+    ]
+  }
+];
+
+
+    return {
+      flag: 200,
+      medicalReports,
+      medicalDepartments
+    };
+  }
+);
 
 
 
@@ -922,3 +1156,8 @@ exports.generateTempUrl = api(["member_id", "expires_in"],
     };
   })
 );
+
+
+
+
+

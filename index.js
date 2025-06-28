@@ -37,7 +37,7 @@ deleteSugarMetric,
 createO2Metric,
 deleteO2Metric
 } = require("./controllers/healthMetric");
-const { getAllReports,getSingleReport,getAllPrescription,getPescriptionData,getSinglePrescription,getCombainedDocs,getSingleCombinedData,editPrescriptionMeta,editReportMeta,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl} = require("./controllers/doc");
+const { getMedInfo,getAllReports,getSingleReport,getAllPrescription,getPescriptionData,getSinglePrescription,getCombainedDocs,getSingleCombinedData,editPrescriptionMeta,editReportMeta,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl} = require("./controllers/doc");
 
 require("dotenv").config();
 
@@ -99,6 +99,9 @@ app.post(`${BASE_URL}/createSugarMetric`, createSugarMetric);
 app.post(`${BASE_URL}/deleteSugarMetric`, deleteSugarMetric);
 app.post(`${BASE_URL}/createO2Metric`, createO2Metric);
 app.post(`${BASE_URL}/deleteO2Metric`, deleteO2Metric);
+
+
+app.post(`${BASE_URL}/getMedInfo`, getMedInfo);
 
 app.post(`${BASE_URL}/getAllReports`, getAllReports);
 app.post(`${BASE_URL}/getSingleReport`, getSingleReport);
