@@ -883,7 +883,7 @@ exports.deletePrescriptionImages = api(["member_id", "prescription_img_ids"],
 
 
 
-exports.getMedInfo = api(
+exports.getMedtTest = api(
   async (req, connection, userInfo) => {
 
 
@@ -1038,6 +1038,21 @@ const medicalReports = [
 
 
 
+
+    return {
+      flag: 200,
+      medicalReports
+    };
+  }
+);
+
+
+
+exports.getMedDpartment = api(
+  async (req, connection, userInfo) => {
+
+    
+
  const medicalDepartments = [
   {
     category: "Internal Medicine & Related Specialties",
@@ -1113,7 +1128,7 @@ const medicalReports = [
 
     return {
       flag: 200,
-      medicalReports,
+      
       medicalDepartments
     };
   }
