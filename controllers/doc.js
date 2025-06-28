@@ -169,6 +169,64 @@ exports.getAllPrescription = api(["member_id"],
   })
 );
 
+
+exports.getPescriptionData = api(["member_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id, limit = 20, offset = 0 } = req.body;
+
+    const parsedLimit = parseInt(limit, 10);
+    const parsedOffset = parseInt(offset, 10);
+
+    if (isNaN(parsedLimit) || isNaN(parsedOffset)) {
+      throw new errors.INVALID_FIELDS_PROVIDED("Limit and offset must be numbers");
+    }
+
+    // Step 1: Authorization check
+    const member = await connection.queryOne(
+      `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("You are not authorized to access this member’s prescriptions.");
+    }
+
+    // Step 2: Fetch paginated prescriptions
+    const prescriptions = await connection.query(
+      `SELECT id, shared,title, department
+       FROM prescriptions
+       WHERE user_id = $1 AND deleted = false
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [member_id, parsedLimit, parsedOffset]
+    );
+
+    // Step 3: Attach images for each prescription
+    for (let prescription of prescriptions) {
+      const images = await connection.query(
+        `SELECT id as prescription_img_id, resiged, thumb FROM prescription_images
+         WHERE prescription_id = $1 AND deleted = false ORDER BY created_at ASC`,
+        [prescription.id]
+      );
+      prescription.images = images;
+    }
+
+    // Step 4: Total count
+    const countResult = await connection.queryOne(
+      `SELECT COUNT(*) AS total FROM prescriptions
+       WHERE user_id = $1 AND deleted = false`,
+      [member_id]
+    );
+
+    return {
+      flag: 200,
+      prescriptions,
+      total: parseInt(countResult.total, 10),
+      message: "Prescriptions fetched successfully."
+    };
+  })
+);
+
 exports.getSinglePrescription = api(["member_id", "prescription_id"],
   auth(async (req, connection, userInfo) => {
     const { member_id, prescription_id } = req.body;
