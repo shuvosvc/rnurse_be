@@ -1163,3 +1163,36 @@ exports.generateTempUrl = api(["member_id", "expires_in"],
 
 
 
+exports.getAllActiveTokens = api(["member_id"],
+  auth(async (req, connection, userInfo) => {
+ const { member_id } = req.body;
+
+  // Verify ownership of the member
+    const member = await connection.queryOne(
+      "SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false",
+      [member_id, userInfo.user_id]
+    );
+
+    if (!member) {
+      throw new errors.UNAUTHORIZED("User not found or unauthorized.");
+    }
+
+
+    const tokens = await connection.query(
+      `SELECT id, user_id, token, expires_at
+       FROM token
+       WHERE user_id = $1 and expires_at > NOW()
+       ORDER BY expires_at ASC`,
+      [member_id]
+    );
+
+    return {
+      flag: 200,
+      message: "Active tokens fetched successfully.",
+      tokens,
+    };
+  })
+);
+
+
+

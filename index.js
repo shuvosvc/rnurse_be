@@ -37,7 +37,7 @@ deleteSugarMetric,
 createO2Metric,
 deleteO2Metric
 } = require("./controllers/healthMetric");
-const { getMedtTest,getMedDpartment,getAllReports,getSingleReport,getAllPrescription,getPescriptionData,getSinglePrescription,getCombainedDocs,getSingleCombinedData,editPrescriptionMeta,editReportMeta,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl} = require("./controllers/doc");
+const { getMedtTest,getMedDpartment,getAllReports,getSingleReport,getAllPrescription,getPescriptionData,getSinglePrescription,getCombainedDocs,getSingleCombinedData,editPrescriptionMeta,editReportMeta,editReportStatus,editprescriptionStatus,deleteReports,deleteReportImages,deletePrescriptions ,deletePrescriptionImages,generateTempUrl,getAllActiveTokens} = require("./controllers/doc");
 
 require("dotenv").config();
 
@@ -120,6 +120,7 @@ app.post(`${BASE_URL}/deleteReportImages`, deleteReportImages);
 app.post(`${BASE_URL}/deletePrescriptions`, deletePrescriptions);
 app.post(`${BASE_URL}/deletePrescriptionImages`, deletePrescriptionImages);
 app.post(`${BASE_URL}/generateTempUrl`, generateTempUrl);
+app.post(`${BASE_URL}/getAllActiveTokens`, getAllActiveTokens);
 
 http.createServer(app).listen(app.get("port"), "0.0.0.0", function () {
   console.log("🚀 Server is up and running on port " + app.get("port") + " 🎉");
