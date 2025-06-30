@@ -1176,8 +1176,7 @@ exports.getAllActiveTokens = api(["member_id"],
     if (!member) {
       throw new errors.UNAUTHORIZED("User not found or unauthorized.");
     }
-
-
+console.log("member========", member);
     const tokens = await connection.query(
       `SELECT id, user_id, token, expires_at
        FROM token
@@ -1185,7 +1184,7 @@ exports.getAllActiveTokens = api(["member_id"],
        ORDER BY expires_at ASC`,
       [member_id]
     );
-
+console.log("object========", tokens);
     return {
       flag: 200,
       message: "Active tokens fetched successfully.",
