@@ -1146,7 +1146,7 @@ exports.generateTempUrl = api(["member_id", "expires_in"],
     await connection.query(
       `INSERT INTO token (user_id, token, expires_at)
        VALUES ($1, $2, $3)`,
-      [member_id, token, formatDateTime(expiresAt)]
+      [member_id, token, expiresAt.toISOString()]
     );
 
     return {
