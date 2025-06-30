@@ -1176,7 +1176,7 @@ exports.getAllActiveTokens = api(["member_id"],
     if (!member) {
       throw new errors.UNAUTHORIZED("User not found or unauthorized.");
     }
-console.log("member========", member);
+
     const tokens = await connection.query(
       `SELECT id, user_id, token, expires_at
        FROM token
@@ -1184,7 +1184,7 @@ console.log("member========", member);
        ORDER BY expires_at ASC`,
       [member_id]
     );
-console.log("object========", tokens);
+
     return {
       flag: 200,
       message: "Active tokens fetched successfully.",
@@ -1195,3 +1195,24 @@ console.log("object========", tokens);
 
 
 
+exports.debugTokenFetch = api(["member_id"],
+  auth(async (req, connection, userInfo) => {
+    const { member_id } = req.body;
+
+    const now = await connection.queryOne(`SELECT NOW() AS now`);
+    const tokens = await connection.query(
+      `SELECT id, token, expires_at
+       FROM token
+       WHERE user_id = $1
+       ORDER BY expires_at DESC
+       LIMIT 5`,
+      [member_id]
+    );
+
+    return {
+      flag: 200,
+      now,
+      tokens,
+    };
+  })
+);
