@@ -28,7 +28,7 @@ exports.getAllReports = api(["member_id"],
 
     // Step 2: Fetch paginated reports
     const reports = await connection.query(
-      `SELECT id, prescription_id, shared,title, test_name, delivery_date, created_at
+      `SELECT id, prescription_id, shared,title, test_name, delivery_date, normal_or_not,created_at
        FROM reports
        WHERE user_id = $1 AND deleted = false
        ORDER BY created_at DESC
@@ -81,7 +81,7 @@ exports.getSingleReport = api(["member_id", "report_id"],
 
     // Step 2: Fetch report
     const report = await connection.queryOne(
-      `SELECT id, prescription_id, shared, test_name, delivery_date, title, created_at
+      `SELECT id, prescription_id, shared, test_name, delivery_date, title, normal_or_not,created_at
        FROM reports
        WHERE id = $1 AND user_id = $2 AND deleted = false`,
       [report_id, member_id]
@@ -316,7 +316,7 @@ exports.getCombainedDocs = api(["member_id"],
     // Step 4: Get all reports for these prescriptions
     const prescriptionIds = prescriptions.map(p => p.id);
     const reports = await connection.query(
-      `SELECT id, shared,title, test_name, delivery_date, prescription_id, created_at
+      `SELECT id, shared,title, test_name, delivery_date,normal_or_not, prescription_id, created_at
        FROM reports
        WHERE prescription_id = ANY($1::int[]) AND deleted = false`,
       [prescriptionIds]
@@ -401,7 +401,7 @@ exports.getSingleCombinedData = api(["member_id", "prescription_id"],
 
     // Step 4: Fetch all reports under this prescription
     const reports = await connection.query(
-      `SELECT id, shared, title, test_name, delivery_date, created_at
+      `SELECT id, shared, title, test_name, delivery_date,normal_or_not, created_at
        FROM reports
        WHERE prescription_id = $1 AND deleted = false
        ORDER BY created_at DESC`,
@@ -526,6 +526,7 @@ exports.editReportMeta = api(["member_id", "report_id"],
       shared,
       test_name,
       delivery_date,
+      normal_or_not,
       title
     } = req.body;
 
@@ -574,6 +575,20 @@ exports.editReportMeta = api(["member_id", "report_id"],
       updates.push(`test_name = $${idx++}`);
       values.push(test_name);
     }
+    if (normal_or_not !== undefined) {
+
+     // Validate normal_or_not if provided by user
+        const allowedNormalOrNot = ['Normal', 'Abnormal']; // Include string 'null' and empty string for flexibility
+        if (!allowedNormalOrNot.includes(normal_or_not)) {
+            return res.status(400).json({ error: 'Invalid normal_or_not value. Must be "Normal", "Abnormal"or empty.' });
+        }
+     updates.push(`normal_or_not = $${idx++}`);
+      values.push(normal_or_not);
+
+        
+    }
+
+
 
     if (delivery_date !== undefined) {
       const date = new Date(delivery_date);
