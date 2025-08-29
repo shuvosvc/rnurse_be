@@ -445,9 +445,13 @@ exports.editPrescriptionMeta = api(["member_id", "prescription_id"],
       title
     } = req.body;
 
-    if (!Number.isInteger(+member_id) || !Number.isInteger(+prescription_id)) {
-      throw new errors.INVALID_FIELDS_PROVIDED("member_id and prescription_id must be integers.");
-    }
+
+
+if (!Number.isInteger(Number(prescription_id))    || !Number.isInteger(Number(member_id))) {
+ throw new errors.INVALID_FIELDS_PROVIDED("member_id and prescription_id must be integers.");
+}
+
+
 
     const member = await connection.queryOne(
       `SELECT user_id FROM users WHERE user_id = $1 AND mc_id = $2 AND deleted = false`,
@@ -544,8 +548,13 @@ exports.editReportMeta = api(["member_id", "report_id"],
     const values = [];
     let idx = 1;
 
-    if (prescription_id !== undefined) {
+    if (prescription_id) {
 
+
+
+      if (!Number.isInteger(Number(prescription_id))) {
+  throw new errors.INVALID_FIELDS_PROVIDED("Invalid prescription_id.");
+}
 
       const prescription = await connection.queryOne(
         `SELECT user_id FROM prescriptions WHERE id = $1 AND deleted = false`,
