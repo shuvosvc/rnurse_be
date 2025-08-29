@@ -545,9 +545,7 @@ exports.editReportMeta = api(["member_id", "report_id"],
     let idx = 1;
 
     if (prescription_id !== undefined) {
-      if (!Number.isInteger(+prescription_id)) {
-        throw new errors.INVALID_FIELDS_PROVIDED("Invalid prescription_id.");
-      }
+
 
       const prescription = await connection.queryOne(
         `SELECT user_id FROM prescriptions WHERE id = $1 AND deleted = false`,
